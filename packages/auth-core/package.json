@@ -1,5 +1,8 @@
 {
   "name": "@gasboost/auth",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/gasboost/auth.git",
@@ -12,8 +15,8 @@
   },
   "exports": {
     ".": {
-      "default": "./src/index.ts",
-      "types": "./src/index.d.ts"
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {

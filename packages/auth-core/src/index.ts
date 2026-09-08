@@ -1,5 +1,2 @@
 export { AppsScriptAuth } from "./AppsScriptAuth";
-export {
-  AppsScriptAuthRepository,
-  Schema,
-} from "./storage/AppsScriptAuthRepository";
+export { AppsScriptAuthRepository } from "./storage/AppsScriptAuthRepository";
