@@ -1,8 +1,27 @@
 {
-  "name": "@gasboost/auth-core",
+  "name": "@gasboost/auth",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/gasboost/auth.git",
     "directory": "packages/auth-core"
+  },
+  "devDependencies": {
+    "@gasboost/fake-core": "^0.1.2",
+    "@gasboost/fake-node": "^0.1.2",
+    "@types/google-apps-script": "^2.0.13"
+  },
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
   }
 }
