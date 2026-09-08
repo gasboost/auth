@@ -1,0 +1,30 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  packages/auth-core:
+    devDependencies:
+      '@types/google-apps-script':
+        specifier: ^2.0.13
+        version: 2.0.13
+
+  packages/auth-sheetorm:
+    dependencies:
+      '@gasboost/auth':
+        specifier: workspace:*
+        version: link:../auth-core
+
+packages:
+
+  '@types/google-apps-script@2.0.13':
+    resolution: {integrity: sha512-prNQIdxdoZu0oSzu1MpiSPblBnN9Gvs3Kbi5g3LNdjnmTwwvneVPAM/mQNDA+/CPMQOrfQRfN43ssS/O8vMGZg==}
+
+snapshots:
+
+  '@types/google-apps-script@2.0.13': {}
