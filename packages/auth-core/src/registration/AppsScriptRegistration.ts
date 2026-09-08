@@ -19,6 +19,10 @@ export class AppsScriptRegistration implements Registration<AppsScriptRegistrati
     // Session.getActiveUser() から識別子取得
     const email = this.session.getActiveUser().getEmail();
 
+    if (!email) {
+      throw new Error("No active user found");
+    }
+
     const existingAccount = await this.repository.account.findByIdentity(
       authPattern.appsScript,
       email,
@@ -26,10 +30,6 @@ export class AppsScriptRegistration implements Registration<AppsScriptRegistrati
 
     if (existingAccount) {
       throw new Error("Account already registered");
-    }
-
-    if (!email || email === "") {
-      throw new Error("No active user found");
     }
 
     // AppsScriptIdentity作成

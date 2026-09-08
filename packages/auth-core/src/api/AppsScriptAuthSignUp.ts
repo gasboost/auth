@@ -33,40 +33,44 @@ export class AppsScriptAuthSignUp {
     utilities: GoogleAppsScript.Utilities.Utilities;
     session: GoogleAppsScript.Base.Session;
   }) {
-    const emailSignUp = new SignUp({
-      sessionStorage,
-      expiresIn,
-      registration: new EmailPasswordRegistration(
-        repository,
-        utilities,
-        emailPassword?.pepper ?? "",
-      ),
-      utilities,
-    });
-
-    const appsScriptSignUp = new SignUp({
-      sessionStorage,
-      expiresIn,
-      registration: new AppsScriptRegistration(utilities, session, repository),
-      utilities,
-    });
-
     this.email = async (input) => {
-      if (emailPassword?.enabled !== true) {
+      if (!emailPassword) {
         throw new Error("Email and password authentication is disabled");
       }
 
-      if (emailPassword.isSignupEnabled === false) {
-        throw new Error("Email and password signup is disabled");
-      }
+      emailPassword.ensureSignUpEnabled();
+
+      const emailSignUp = new SignUp({
+        sessionStorage,
+        expiresIn,
+        registration: new EmailPasswordRegistration(
+          repository,
+          utilities,
+          emailPassword?.pepper ?? "",
+        ),
+        utilities,
+      });
 
       return emailSignUp.execute(input);
     };
 
     this.appsScript = async (input) => {
-      if (appsScript?.enabled !== true) {
+      if (!appsScript) {
         throw new Error("Apps Script authentication is disabled");
       }
+
+      appsScript.ensureSignUpEnabled();
+
+      const appsScriptSignUp = new SignUp({
+        sessionStorage,
+        expiresIn,
+        registration: new AppsScriptRegistration(
+          utilities,
+          session,
+          repository,
+        ),
+        utilities,
+      });
 
       return appsScriptSignUp.execute(input);
     };

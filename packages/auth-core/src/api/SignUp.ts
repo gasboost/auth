@@ -1,4 +1,5 @@
-import { Session, SessionId } from "../domain/Session";
+import { Session } from "../domain/Session";
+import { User } from "../domain/User";
 import type { Registration } from "../registration/Registration";
 import type { AppsScriptSessionStorage } from "../storage/AppsScriptSessionStorage";
 
@@ -25,7 +26,10 @@ export class SignUp<T> {
     this.expiresIn = expiresIn;
   }
 
-  async execute(input: T): Promise<SessionId> {
+  async execute(input: T): Promise<{
+    user: User;
+    session: Session;
+  }> {
     const user = await this.registration.register(input);
 
     const now = new Date();
@@ -39,6 +43,6 @@ export class SignUp<T> {
 
     await this.sessionStorage.save(session);
 
-    return session.id;
+    return { user, session };
   }
 }

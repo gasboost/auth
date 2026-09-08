@@ -6,6 +6,8 @@
     "directory": "packages/auth-core"
   },
   "devDependencies": {
+    "@gasboost/fake-core": "^0.1.2",
+    "@gasboost/fake-node": "^0.1.2",
     "@types/google-apps-script": "^2.0.13"
   },
   "exports": {
@@ -13,5 +15,10 @@
       "default": "./src/index.ts",
       "types": "./src/index.d.ts"
     }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
   }
 }

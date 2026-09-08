@@ -5,12 +5,50 @@ import { EmailPasswordIdentity } from "../identity/EmailPasswordIdentity";
 import type { AppsScriptAuthRepository } from "../storage/AppsScriptAuthRepository";
 import type { Authentication } from "./Authentication";
 
-// https://better-auth.com/docs/authentication/email-password#configuration
-export type EmailPasswordAuthConfig = {
+export type EmailPasswordAuthOptions = {
   enabled?: boolean;
   isSignupEnabled?: boolean;
   pepper: string;
 };
+
+export class EmailPasswordAuthConfig {
+  public readonly enabled: boolean;
+  public readonly isSignupEnabled: boolean;
+  public readonly pepper: string;
+
+  constructor({
+    enabled = false,
+    isSignupEnabled = true,
+    pepper,
+  }: {
+    enabled?: boolean;
+    isSignupEnabled?: boolean;
+    pepper: string;
+  }) {
+    if (enabled && !pepper.trim()) {
+      throw new Error(
+        "Pepper is required when email and password authentication is enabled",
+      );
+    }
+
+    this.enabled = enabled;
+    this.isSignupEnabled = isSignupEnabled;
+    this.pepper = pepper;
+  }
+  public ensureSignInEnabled(): void {
+    if (!this.enabled) {
+      throw new Error("Email and password authentication is disabled");
+    }
+  }
+
+  public ensureSignUpEnabled(): void {
+    this.ensureSignInEnabled();
+
+    if (!this.isSignupEnabled) {
+      throw new Error("Email and password signup is disabled");
+    }
+  }
+}
 
 export interface EmailPasswordCredential {
   readonly email: string;

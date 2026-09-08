@@ -2,8 +2,14 @@ import { AppsScriptAuthSession } from "./api/AppsScriptAuthSession";
 import { AppsScriptAuthSignIn } from "./api/AppsScriptAuthSignIn";
 import { AppsScriptAuthSignOut } from "./api/AppsScriptAuthSignOut";
 import { AppsScriptAuthSignUp } from "./api/AppsScriptAuthSignUp";
-import { type AppsScriptAuthenticationConfig } from "./authentication/AppsScriptAuthentication";
-import { type EmailPasswordAuthConfig } from "./authentication/EmailPasswordAuthentication";
+import {
+  type AppsScriptAuthenticationOptions,
+  AppsScriptAuthenticationConfig,
+} from "./authentication/AppsScriptAuthentication";
+import {
+  type EmailPasswordAuthOptions,
+  EmailPasswordAuthConfig,
+} from "./authentication/EmailPasswordAuthentication";
 import type { SessionStorageType } from "./factory/sessionStorageFactory";
 import { sessionStorageFactory } from "./factory/sessionStorageFactory";
 import { AppsScriptAuthRepository } from "./storage/AppsScriptAuthRepository";
@@ -13,11 +19,19 @@ type SessionConfig = {
   expiresIn?: number;
 };
 
+type AppsScriptRuntime = {
+  utilities: GoogleAppsScript.Utilities.Utilities;
+  session: GoogleAppsScript.Base.Session;
+  cacheService: GoogleAppsScript.Cache.CacheService;
+  propertiesService: GoogleAppsScript.Properties.PropertiesService;
+};
+
 type AppsScriptAuthConfig = {
   repository: AppsScriptAuthRepository;
   session: SessionConfig;
-  emailPassword?: EmailPasswordAuthConfig;
-  appsScript?: AppsScriptAuthenticationConfig;
+  runtime: AppsScriptRuntime;
+  emailPassword?: EmailPasswordAuthOptions;
+  appsScript?: AppsScriptAuthenticationOptions;
 };
 
 export class AppsScriptAuth {
@@ -29,19 +43,31 @@ export class AppsScriptAuth {
   constructor({
     repository,
     session,
+    runtime,
     emailPassword,
     appsScript,
   }: AppsScriptAuthConfig) {
-    const sessionStorage = sessionStorageFactory(session.storageType);
+    const sessionStorage = sessionStorageFactory(session.storageType, {
+      cacheService: runtime.cacheService,
+      propertiesService: runtime.propertiesService,
+    });
     const expiresIn = session.expiresIn ?? 60 * 20;
+
+    const emailPasswordConfig = emailPassword
+      ? new EmailPasswordAuthConfig(emailPassword)
+      : undefined;
+
+    const appsScriptConfig = appsScript
+      ? new AppsScriptAuthenticationConfig(appsScript)
+      : undefined;
 
     this.signIn = new AppsScriptAuthSignIn({
       sessionStorage,
       repository,
-      emailPassword,
-      appsScript,
-      utilities: Utilities,
-      session: Session,
+      emailPassword: emailPasswordConfig,
+      appsScript: appsScriptConfig,
+      utilities: runtime.utilities,
+      session: runtime.session,
       expiresIn,
     });
 
@@ -49,10 +75,10 @@ export class AppsScriptAuth {
       sessionStorage,
       expiresIn,
       repository,
-      emailPassword,
-      appsScript,
-      utilities: Utilities,
-      session: Session,
+      emailPassword: emailPasswordConfig,
+      appsScript: appsScriptConfig,
+      utilities: runtime.utilities,
+      session: runtime.session,
     });
 
     this.session = new AppsScriptAuthSession({

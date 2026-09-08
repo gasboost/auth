@@ -33,38 +33,40 @@ export class AppsScriptAuthSignIn {
     session: GoogleAppsScript.Base.Session;
     expiresIn: number;
   }) {
-    const emailSignIn = new SignIn({
-      sessionStorage,
-      expiresIn,
-      authentication: new EmailPasswordAuthentication(
-        repository,
-        utilities,
-        emailPassword?.pepper ?? "",
-      ),
-      utilities,
-    });
-
-    const appsScriptSignIn = new SignIn({
-      sessionStorage,
-      expiresIn,
-      authentication: new AppsScriptAuthentication(repository, session),
-      utilities,
-    });
-
     this.email = async (credential) => {
-      if (emailPassword?.enabled !== true) {
+      if (!emailPassword) {
         throw new Error("Email and password authentication is disabled");
       }
+
+      emailPassword.ensureSignInEnabled();
+
+      const emailSignIn = new SignIn({
+        sessionStorage,
+        authentication: new EmailPasswordAuthentication(
+          repository,
+          utilities,
+          emailPassword.pepper,
+        ),
+        utilities,
+        expiresIn,
+      });
 
       return emailSignIn.execute(credential);
     };
 
     this.appsScript = async (credential) => {
-      if (appsScript?.enabled !== true) {
+      if (!appsScript) {
         throw new Error("Apps Script authentication is disabled");
       }
 
-      return appsScriptSignIn.execute(credential);
+      appsScript.ensureSignInEnabled();
+
+      return new SignIn({
+        sessionStorage,
+        authentication: new AppsScriptAuthentication(repository, session),
+        utilities,
+        expiresIn,
+      }).execute(credential);
     };
   }
 }

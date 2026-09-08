@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
-    "types": ["google-apps-script"]
-  }
+    "types": ["google-apps-script"],
+    "rootDir": ".",
+    "skipLibCheck": true
+  },
+  "include": ["src", "tests"],
+  "exclude": ["node_modules", "dist"]
 }
