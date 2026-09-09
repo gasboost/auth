@@ -39,7 +39,7 @@ export class AppsScriptAuthenticationConfig {
   }
 }
 
-export interface AppsScriptCredential {}
+export type AppsScriptCredential = Record<string, never>;
 
 export class AppsScriptAuthentication implements Authentication<AppsScriptCredential> {
   constructor(
@@ -47,7 +47,7 @@ export class AppsScriptAuthentication implements Authentication<AppsScriptCreden
     private readonly session: GoogleAppsScript.Base.Session,
   ) {}
 
-  async verify(credential: AppsScriptCredential): Promise<User> {
+  async verify(__credential: AppsScriptCredential): Promise<User> {
     const email = this.session.getActiveUser().getEmail();
 
     if (!email) {

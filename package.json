@@ -1,7 +1,20 @@
 {
   "name": "root",
   "devDependencies": {
-    "typescript": "^7.0.2",
+    "@eslint/js": "^10.0.1",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "eslint": "^10.10.0",
+    "prettier": "^3.9.6",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "^8.70.0",
     "vitest": "^5.0.0"
+  },
+  "scripts": {
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "format:fix": "pnpm -r format:fix",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
   }
 }

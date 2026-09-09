@@ -20,6 +20,9 @@
     }
   },
   "scripts": {
+    "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "format:fix": "prettier --write . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "lint": "eslint . --config ../../eslint.config.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "rm -rf dist && tsc -p tsconfig.build.json"
