@@ -46,7 +46,7 @@ export class AppsScriptAuthSignUp {
         registration: new EmailPasswordRegistration(
           repository,
           utilities,
-          emailPassword?.pepper ?? "",
+          emailPassword,
         ),
         utilities,
       });

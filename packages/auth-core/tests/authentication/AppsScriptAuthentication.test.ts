@@ -112,8 +112,6 @@ describe("AppsScriptAuthentication", () => {
         accountId: "user@example.com",
         password: new HashedPassword({
           value: "hash",
-          salt: "salt",
-          iterations: 3,
         }),
       }),
     });

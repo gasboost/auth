@@ -1,3 +1,4 @@
+import type { EmailPasswordAuthConfig } from "../authentication/EmailPasswordAuthentication";
 import { authPattern } from "../AuthPattern";
 import { Account } from "../domain/Account";
 import { Password } from "../domain/Password";
@@ -16,7 +17,7 @@ export class EmailPasswordRegistration implements Registration<EmailPasswordRegi
   constructor(
     private readonly repository: AppsScriptAuthRepository,
     private readonly utilities: GoogleAppsScript.Utilities.Utilities,
-    private readonly pepper: string,
+    private readonly config: EmailPasswordAuthConfig,
   ) {}
 
   async register(input: EmailPasswordRegistrationInput): Promise<User> {
@@ -29,19 +30,25 @@ export class EmailPasswordRegistration implements Registration<EmailPasswordRegi
       throw new Error("Account already registered");
     }
 
-    const password = new Password(input.password, this.utilities, this.pepper);
+    const userId = this.utilities.getUuid();
+    const accountId = this.utilities.getUuid();
 
-    const hashedPassword = await password.hash();
+    const password = new Password(
+      input.password,
+      this.utilities,
+      this.config.pepper,
+      this.config.iterations,
+    );
+
+    const hashedPassword = await password.hash(accountId);
 
     const identity = new EmailPasswordIdentity({
       accountId: input.email,
       password: hashedPassword,
     });
 
-    const userId = this.utilities.getUuid();
-
     const account = new Account({
-      id: this.utilities.getUuid(),
+      id: accountId,
       userId,
       identity,
     });

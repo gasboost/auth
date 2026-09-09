@@ -109,4 +109,108 @@ describe("EmailPasswordAuthConfig", () => {
 
     expect(() => config.ensureSignUpEnabled()).not.toThrow();
   });
+
+  it("iterationsのデフォルトは300になる", () => {
+    const config = new EmailPasswordAuthConfig({
+      pepper: "",
+    });
+
+    expect(config.iterations).toBe(EmailPasswordAuthConfig.DEFAULT_ITERATIONS);
+    expect(config.iterations).toBe(300);
+  });
+
+  it("iterationsを指定できる", () => {
+    const config = new EmailPasswordAuthConfig({
+      pepper: "",
+      iterations: 500,
+    });
+
+    expect(config.iterations).toBe(500);
+  });
+
+  it("最大iterationsは1000になる", () => {
+    expect(EmailPasswordAuthConfig.MAX_ITERATIONS).toBe(1000);
+  });
+
+  it("iterationsが1なら生成できる", () => {
+    expect(
+      () =>
+        new EmailPasswordAuthConfig({
+          pepper: "",
+          iterations: 1,
+        }),
+    ).not.toThrow();
+  });
+
+  it("iterationsが最大値なら生成できる", () => {
+    expect(
+      () =>
+        new EmailPasswordAuthConfig({
+          pepper: "",
+          iterations: EmailPasswordAuthConfig.MAX_ITERATIONS,
+        }),
+    ).not.toThrow();
+  });
+
+  it("iterationsが0なら拒否する", () => {
+    expect(
+      () =>
+        new EmailPasswordAuthConfig({
+          pepper: "",
+          iterations: 0,
+        }),
+    ).toThrow("Password hash iterations must be a positive integer");
+  });
+
+  it("iterationsが負数なら拒否する", () => {
+    expect(
+      () =>
+        new EmailPasswordAuthConfig({
+          pepper: "",
+          iterations: -1,
+        }),
+    ).toThrow("Password hash iterations must be a positive integer");
+  });
+
+  it("iterationsが小数なら拒否する", () => {
+    expect(
+      () =>
+        new EmailPasswordAuthConfig({
+          pepper: "",
+          iterations: 1.5,
+        }),
+    ).toThrow("Password hash iterations must be a positive integer");
+  });
+
+  it("iterationsが最大値を超える場合は拒否する", () => {
+    expect(
+      () =>
+        new EmailPasswordAuthConfig({
+          pepper: "",
+          iterations: EmailPasswordAuthConfig.MAX_ITERATIONS + 1,
+        }),
+    ).toThrow("Password hash iterations must not exceed 1000");
+  });
+
+  it("ensureIterationsWithinLimitで許容範囲を検証できる", () => {
+    const config = new EmailPasswordAuthConfig({
+      pepper: "",
+    });
+
+    expect(() => config.ensureIterationsWithinLimit(1)).not.toThrow();
+
+    expect(() => config.ensureIterationsWithinLimit(500)).not.toThrow();
+
+    expect(() => config.ensureIterationsWithinLimit(1000)).not.toThrow();
+  });
+
+  it("ensureIterationsWithinLimitで最大値超過を検出できる", () => {
+    const config = new EmailPasswordAuthConfig({
+      pepper: "",
+    });
+
+    expect(() => config.ensureIterationsWithinLimit(1001)).toThrow(
+      "Password hash iterations must not exceed 1000",
+    );
+  });
 });

@@ -1,8 +1,10 @@
 import { NodeUtilities } from "@gasboost/fake-node";
 import { describe, expect, it, vi } from "vitest";
 
+import { EmailPasswordAuthConfig } from "../../src/authentication/EmailPasswordAuthentication";
 import { authPattern } from "../../src/AuthPattern";
 import { Account } from "../../src/domain/Account";
+import { Password } from "../../src/domain/Password";
 import { User } from "../../src/domain/User";
 import { EmailPasswordIdentity } from "../../src/identity/EmailPasswordIdentity";
 import { EmailPasswordRegistration } from "../../src/registration/EmailPasswordRegistration";
@@ -24,6 +26,14 @@ function createRepository({
   } satisfies AppsScriptAuthRepository;
 }
 
+function createConfig(): EmailPasswordAuthConfig {
+  return new EmailPasswordAuthConfig({
+    enabled: true,
+    pepper: "pepper",
+    iterations: 300,
+  });
+}
+
 describe("EmailPasswordRegistration", () => {
   it("emailとpasswordからUserとAccountを生成して保存する", async () => {
     const repository = createRepository();
@@ -32,7 +42,7 @@ describe("EmailPasswordRegistration", () => {
     const registration = new EmailPasswordRegistration(
       repository,
       utilities,
-      "pepper",
+      createConfig(),
     );
 
     const user = await registration.register({
@@ -61,11 +71,12 @@ describe("EmailPasswordRegistration", () => {
   it("保存されたpasswordで認証できる", async () => {
     const repository = createRepository();
     const utilities = new NodeUtilities();
+    const config = createConfig();
 
     const registration = new EmailPasswordRegistration(
       repository,
       utilities,
-      "pepper",
+      config,
     );
 
     const user = await registration.register({
@@ -74,15 +85,17 @@ describe("EmailPasswordRegistration", () => {
       password: "password",
     });
 
-    const identity = user.accounts[0].identity as EmailPasswordIdentity;
+    const account = user.accounts[0];
+    const identity = account.identity as EmailPasswordIdentity;
 
-    const password = new (await import("../../src/domain/Password")).Password(
+    const password = new Password(
       "password",
       utilities,
-      "pepper",
+      config.pepper,
+      config.iterations,
     );
 
-    await expect(identity.verify(password)).resolves.toBe(true);
+    await expect(identity.verify(password, account.id)).resolves.toBe(true);
   });
 
   it("同じemailPassword identityが既に存在する場合は拒否する", async () => {
@@ -102,7 +115,7 @@ describe("EmailPasswordRegistration", () => {
     const registration = new EmailPasswordRegistration(
       repository,
       new NodeUtilities(),
-      "pepper",
+      createConfig(),
     );
 
     await expect(
@@ -127,7 +140,7 @@ describe("EmailPasswordRegistration", () => {
     const registration = new EmailPasswordRegistration(
       repository,
       new NodeUtilities(),
-      "pepper",
+      createConfig(),
     );
 
     await registration.register({
