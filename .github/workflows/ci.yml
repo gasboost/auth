@@ -42,11 +42,20 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Typecheck
-        run: pnpm typecheck
+      - name: Typecheck auth-core
+        run: pnpm --filter @gasboost/auth typecheck
 
-      - name: Test
-        run: pnpm test
+      - name: Test auth-core
+        run: pnpm --filter @gasboost/auth test
 
-      - name: Build
-        run: pnpm build
+      - name: Build auth-core
+        run: pnpm --filter @gasboost/auth build
+
+      - name: Typecheck auth-sheetorm
+        run: pnpm --filter @gasboost/auth-sheetorm typecheck
+
+      - name: Test auth-sheetorm
+        run: pnpm --filter @gasboost/auth-sheetorm test
+
+      - name: Build auth-sheetorm
+        run: pnpm --filter @gasboost/auth-sheetorm build

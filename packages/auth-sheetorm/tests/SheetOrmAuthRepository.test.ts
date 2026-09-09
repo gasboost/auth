@@ -10,7 +10,7 @@ import {
 import { InMemoryCacheService } from "@gasboost/fake-core";
 import { NodeUtilities } from "@gasboost/fake-node";
 import { SheetDB } from "@gasboost/sheetorm";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createAuthSchema } from "../src/createAuthSchema";
 import { SheetOrmAuthRepository } from "../src/SheetOrmAuthRepository";
@@ -303,6 +303,28 @@ describe("SheetOrmAuthRepository", () => {
           "nobody@example.com",
         ),
       ).resolves.toBeNull();
+    });
+
+    it("UserとAccountを同一transaction内で保存する", async () => {
+      const { db, repository } = createRepository();
+
+      const transactionSpy = vi.spyOn(db, "transaction");
+      const createSpy = vi.spyOn(db, "create");
+
+      await repository.user.create(createUser());
+
+      expect(transactionSpy).toHaveBeenCalledTimes(1);
+      expect(createSpy).toHaveBeenCalledTimes(2);
+
+      const transactionCallOrder = transactionSpy.mock.invocationCallOrder[0];
+
+      const firstCreateCallOrder = createSpy.mock.invocationCallOrder[0];
+
+      const secondCreateCallOrder = createSpy.mock.invocationCallOrder[1];
+
+      expect(transactionCallOrder).toBeLessThan(firstCreateCallOrder);
+
+      expect(transactionCallOrder).toBeLessThan(secondCreateCallOrder);
     });
   });
 });
