@@ -31,6 +31,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify TypeScript version
+        run: |
+          pnpm exec tsc --version
+          pnpm exec tsc --version | grep '^Version 7\.'
+
       - name: Format
         run: pnpm format
 
