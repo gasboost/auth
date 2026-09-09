@@ -1,0 +1,34 @@
+{
+  "name": "@gasboost/auth-sheetorm",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gasboost/auth.git",
+    "directory": "packages/auth-sheetorm"
+  },
+  "dependencies": {
+    "@gasboost/auth": "workspace:*",
+    "@gasboost/sheetorm": "^1.0.0",
+    "zod": "^4.5.4"
+  },
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "format:fix": "prettier --write . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "lint": "eslint . --config ../../eslint.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@gasboost/fake-core": "^0.1.2",
+    "@gasboost/fake-node": "^0.1.2"
+  }
+}
