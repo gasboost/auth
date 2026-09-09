@@ -9,32 +9,38 @@ export type EmailPasswordAuthOptions = {
   enabled?: boolean;
   isSignupEnabled?: boolean;
   pepper: string;
+  iterations?: number;
 };
 
 export class EmailPasswordAuthConfig {
+  public static readonly DEFAULT_ITERATIONS = 300;
+  public static readonly MAX_ITERATIONS = 1000;
+
   public readonly enabled: boolean;
   public readonly isSignupEnabled: boolean;
   public readonly pepper: string;
+  public readonly iterations: number;
 
   constructor({
     enabled = false,
     isSignupEnabled = true,
     pepper,
-  }: {
-    enabled?: boolean;
-    isSignupEnabled?: boolean;
-    pepper: string;
-  }) {
+    iterations = EmailPasswordAuthConfig.DEFAULT_ITERATIONS,
+  }: EmailPasswordAuthOptions) {
     if (enabled && !pepper.trim()) {
       throw new Error(
         "Pepper is required when email and password authentication is enabled",
       );
     }
 
+    this.ensureIterationsWithinLimit(iterations);
+
     this.enabled = enabled;
     this.isSignupEnabled = isSignupEnabled;
     this.pepper = pepper;
+    this.iterations = iterations;
   }
+
   public ensureSignInEnabled(): void {
     if (!this.enabled) {
       throw new Error("Email and password authentication is disabled");
@@ -48,6 +54,18 @@ export class EmailPasswordAuthConfig {
       throw new Error("Email and password signup is disabled");
     }
   }
+
+  public ensureIterationsWithinLimit(iterations: number): void {
+    if (!Number.isInteger(iterations) || iterations < 1) {
+      throw new Error("Password hash iterations must be a positive integer");
+    }
+
+    if (iterations > EmailPasswordAuthConfig.MAX_ITERATIONS) {
+      throw new Error(
+        `Password hash iterations must not exceed ${EmailPasswordAuthConfig.MAX_ITERATIONS}`,
+      );
+    }
+  }
 }
 
 export interface EmailPasswordCredential {
@@ -59,7 +77,7 @@ export class EmailPasswordAuthentication implements Authentication<EmailPassword
   constructor(
     private readonly repository: AppsScriptAuthRepository,
     private readonly utilities: GoogleAppsScript.Utilities.Utilities,
-    private readonly pepper: string,
+    private readonly config: EmailPasswordAuthConfig,
   ) {}
 
   async verify(credential: EmailPasswordCredential): Promise<User> {
@@ -79,10 +97,11 @@ export class EmailPasswordAuthentication implements Authentication<EmailPassword
     const password = new Password(
       credential.password,
       this.utilities,
-      this.pepper,
+      this.config.pepper,
+      this.config.iterations,
     );
 
-    if (!(await account.identity.verify(password))) {
+    if (!(await account.identity.verify(password, account.id))) {
       throw new Error("Invalid password");
     }
 

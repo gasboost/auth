@@ -65,18 +65,18 @@ describe("AppsScriptAuthSignIn", () => {
   it("emailPasswordが有効な場合はemailでsign inできる", async () => {
     const utilities = new NodeUtilities();
     const pepper = "pepper";
+    const iterations = 3;
+    const accountId = "account-1";
 
     const hashedPassword = await new Password(
       "password",
       utilities,
       pepper,
-    ).hash({
-      salt: "salt",
-      iterations: 3,
-    });
+      iterations,
+    ).hash(accountId);
 
     const account = new Account({
-      id: "account-1",
+      id: accountId,
       userId: "user-1",
       identity: new EmailPasswordIdentity({
         accountId: "user@example.com",
@@ -103,6 +103,7 @@ describe("AppsScriptAuthSignIn", () => {
       emailPassword: new EmailPasswordAuthConfig({
         enabled: true,
         pepper,
+        iterations,
         isSignupEnabled: true,
       }),
       appsScript: new AppsScriptAuthenticationConfig({

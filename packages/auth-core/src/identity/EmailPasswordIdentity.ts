@@ -4,6 +4,7 @@ import type { ProviderIdentity } from "./ProviderIdentity";
 
 export class EmailPasswordIdentity implements ProviderIdentity {
   public readonly providerName = authPattern.emailPassword;
+
   public readonly accountId: string;
   public readonly password: HashedPassword;
 
@@ -18,7 +19,7 @@ export class EmailPasswordIdentity implements ProviderIdentity {
     this.password = password;
   }
 
-  async verify(password: Password): Promise<boolean> {
-    return this.password.verify(password);
+  async verify(password: Password, salt: string): Promise<boolean> {
+    return this.password.verify(password, salt);
   }
 }

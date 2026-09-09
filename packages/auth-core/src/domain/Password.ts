@@ -3,15 +3,10 @@ export class Password {
     public readonly value: string,
     private readonly utilities: GoogleAppsScript.Utilities.Utilities,
     private readonly pepper: string,
+    private readonly iterations: number,
   ) {}
 
-  async hash({
-    salt = this.utilities.getUuid(),
-    iterations = 300,
-  }: {
-    salt?: string;
-    iterations?: number;
-  } = {}): Promise<HashedPassword> {
+  async hash(salt: string): Promise<HashedPassword> {
     const passwordBytes = Array.from(
       this.utilities.newBlob(this.value + this.pepper).getBytes(),
     );
@@ -31,7 +26,7 @@ export class Password {
 
     const result = [...previous];
 
-    for (let i = 1; i < iterations; i++) {
+    for (let i = 1; i < this.iterations; i++) {
       previous = this.utilities.computeHmacSha256Signature(
         previous,
         passwordBytes,
@@ -49,36 +44,19 @@ export class Password {
 
     return new HashedPassword({
       value: hash,
-      salt,
-      iterations,
     });
   }
 }
 
 export class HashedPassword {
   public readonly value: string;
-  public readonly salt: string;
-  public readonly iterations: number;
 
-  constructor({
-    value,
-    salt,
-    iterations,
-  }: {
-    value: string;
-    salt: string;
-    iterations: number;
-  }) {
+  constructor({ value }: { value: string }) {
     this.value = value;
-    this.salt = salt;
-    this.iterations = iterations;
   }
 
-  async verify(password: Password): Promise<boolean> {
-    const hashed = await password.hash({
-      salt: this.salt,
-      iterations: this.iterations,
-    });
+  async verify(password: Password, salt: string): Promise<boolean> {
+    const hashed = await password.hash(salt);
 
     if (this.value.length !== hashed.value.length) {
       return false;

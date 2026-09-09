@@ -45,7 +45,7 @@ export class AppsScriptAuthSignIn {
         authentication: new EmailPasswordAuthentication(
           repository,
           utilities,
-          emailPassword.pepper,
+          emailPassword,
         ),
         utilities,
         expiresIn,
