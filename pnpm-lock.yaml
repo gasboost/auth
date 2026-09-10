@@ -32,6 +32,9 @@ importers:
 
   packages/auth-core:
     devDependencies:
+      '@gasboost/app':
+        specifier: ^1.3.0
+        version: 1.3.0
       '@gasboost/fake-core':
         specifier: ^0.1.2
         version: 0.1.2
@@ -107,6 +110,9 @@ packages:
   '@eslint/plugin-kit@0.7.3':
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
+  '@gasboost/app@1.3.0':
+    resolution: {integrity: sha512-pMMvZQlnfxPkuC8+l4t5FFEDFRQmLo7LvU1pVSq+DEbTsrElXd9UytOk/vNyic+7s2ro0lQnODDjWS5u3KSi7A==}
 
   '@gasboost/fake-core@0.1.2':
     resolution: {integrity: sha512-FYicRmQK21hyUV31S1Ed6/GFtReL8Vv96rc3tQhJk3vQ5G+Y31GfCnX78CxuhyS45Gg+tOnkGLzByvK5EP38aQ==}
@@ -1041,6 +1047,8 @@ snapshots:
     dependencies:
       '@eslint/core': 1.2.1
       levn: 0.4.1
+
+  '@gasboost/app@1.3.0': {}
 
   '@gasboost/fake-core@0.1.2': {}
 
