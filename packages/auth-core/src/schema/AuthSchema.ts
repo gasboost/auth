@@ -17,6 +17,16 @@ export type AuthSchemaOptions = {
       passwordHash?: string;
     };
   };
+  passwordReset?: {
+    modelName?: string;
+    fields?: {
+      id?: string;
+      accountId?: string;
+      tokenHash?: string;
+      expiresAt?: string;
+      enabled?: string;
+    };
+  };
 };
 
 export type AuthSchema = {
@@ -38,6 +48,16 @@ export type AuthSchema = {
       passwordHash: string;
     };
   };
+  passwordReset: {
+    modelName: string;
+    fields: {
+      id: string;
+      accountId: string;
+      tokenHash: string;
+      expiresAt: string;
+      enabled: string;
+    };
+  };
 };
 
 export class AuthSchemaConfig {
@@ -46,6 +66,7 @@ export class AuthSchemaConfig {
   constructor(options: AuthSchemaOptions = { dbId: "" }) {
     this.schema = {
       dbId: options.dbId,
+
       user: {
         modelName: options.user?.modelName ?? "user",
         fields: {
@@ -63,6 +84,17 @@ export class AuthSchemaConfig {
           providerAccountId:
             options.account?.fields?.providerAccountId ?? "providerAccountId",
           passwordHash: options.account?.fields?.passwordHash ?? "passwordHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: options.passwordReset?.modelName ?? "passwordReset",
+        fields: {
+          id: options.passwordReset?.fields?.id ?? "id",
+          accountId: options.passwordReset?.fields?.accountId ?? "accountId",
+          tokenHash: options.passwordReset?.fields?.tokenHash ?? "tokenHash",
+          expiresAt: options.passwordReset?.fields?.expiresAt ?? "expiresAt",
+          enabled: options.passwordReset?.fields?.enabled ?? "enabled",
         },
       },
     };

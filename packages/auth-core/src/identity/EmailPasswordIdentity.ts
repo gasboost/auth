@@ -22,4 +22,11 @@ export class EmailPasswordIdentity implements ProviderIdentity {
   async verify(password: Password, salt: string): Promise<boolean> {
     return this.password.verify(password, salt);
   }
+
+  changePassword(newPassword: HashedPassword): EmailPasswordIdentity {
+    return new EmailPasswordIdentity({
+      accountId: this.accountId,
+      password: newPassword,
+    });
+  }
 }

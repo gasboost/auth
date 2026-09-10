@@ -21,9 +21,12 @@ function createRepository() {
       find: vi.fn().mockResolvedValue(null),
       create: vi.fn(),
     },
+    passwordCredential: {
+      findByResetTokenHash: vi.fn().mockResolvedValue(null),
+      save: vi.fn(),
+    },
   } satisfies AppsScriptAuthRepository;
 }
-
 function createSession(email = "user@example.com") {
   const context = new InMemoryContext(
     "owner@example.com",
@@ -163,5 +166,56 @@ describe("AppsScriptAuth", () => {
           },
         }),
     ).not.toThrow();
+  });
+
+  it("passwordReset設定を省略できる", () => {
+    const auth = new AppsScriptAuth({
+      repository: createRepository(),
+      runtime: createRuntime(),
+      session: {
+        storageType: "cache",
+      },
+      emailPassword: {
+        enabled: true,
+        pepper: "pepper",
+      },
+    });
+
+    expect(auth.password).toBeUndefined();
+  });
+
+  it("emailPassword設定を省略した場合password APIを公開しない", () => {
+    const auth = new AppsScriptAuth({
+      repository: createRepository(),
+      runtime: createRuntime(),
+      session: {
+        storageType: "cache",
+      },
+    });
+
+    expect(auth.password).toBeUndefined();
+  });
+
+  it("passwordReset設定がある場合password APIを公開する", () => {
+    const auth = new AppsScriptAuth({
+      repository: createRepository(),
+      runtime: createRuntime(),
+      session: {
+        storageType: "cache",
+      },
+      emailPassword: {
+        enabled: true,
+        pepper: "pepper",
+        passwordReset: {
+          delivery: {
+            send: vi.fn(),
+          },
+        },
+      },
+    });
+
+    expect(auth.password).toBeDefined();
+    expect(auth.password?.forgot).toBeTypeOf("function");
+    expect(auth.password?.reset).toBeTypeOf("function");
   });
 });

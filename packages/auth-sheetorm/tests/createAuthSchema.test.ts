@@ -26,6 +26,17 @@ describe("createAuthSchema", () => {
           passwordHash: "passwordHash",
         },
       },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
+        },
+      },
     } as const satisfies AuthSchema;
 
     const [userTable, accountTable] = createAuthSchema(schema);
@@ -76,6 +87,17 @@ describe("createAuthSchema", () => {
           provider: "provider",
           providerAccountId: "providerAccountId",
           passwordHash: "passwordHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
         },
       },
     } as const satisfies AuthSchema;
@@ -133,6 +155,17 @@ describe("createAuthSchema", () => {
           provider: "provider",
           providerAccountId: "providerAccountId",
           passwordHash: "passwordHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
         },
       },
     } as const satisfies AuthSchema;

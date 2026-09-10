@@ -1,3 +1,4 @@
+import type { PasswordResetDelivery } from "../api/AppsScriptAuthPassword";
 import { authPattern } from "../AuthPattern";
 import { Password } from "../domain/Password";
 import type { User } from "../domain/User";
@@ -10,8 +11,11 @@ export type EmailPasswordAuthOptions = {
   isSignupEnabled?: boolean;
   pepper: string;
   iterations?: number;
+  passwordReset?: {
+    delivery: PasswordResetDelivery;
+    expiresIn?: number;
+  };
 };
-
 export class EmailPasswordAuthConfig {
   public static readonly DEFAULT_ITERATIONS = 300;
   public static readonly MAX_ITERATIONS = 1000;
@@ -20,12 +24,17 @@ export class EmailPasswordAuthConfig {
   public readonly isSignupEnabled: boolean;
   public readonly pepper: string;
   public readonly iterations: number;
+  public readonly passwordReset?: {
+    delivery: PasswordResetDelivery;
+    expiresIn?: number;
+  };
 
   constructor({
     enabled = false,
     isSignupEnabled = true,
     pepper,
     iterations = EmailPasswordAuthConfig.DEFAULT_ITERATIONS,
+    passwordReset,
   }: EmailPasswordAuthOptions) {
     if (enabled && !pepper.trim()) {
       throw new Error(
@@ -39,6 +48,7 @@ export class EmailPasswordAuthConfig {
     this.isSignupEnabled = isSignupEnabled;
     this.pepper = pepper;
     this.iterations = iterations;
+    this.passwordReset = passwordReset;
   }
 
   public ensureSignInEnabled(): void {
@@ -64,6 +74,12 @@ export class EmailPasswordAuthConfig {
       throw new Error(
         `Password hash iterations must not exceed ${EmailPasswordAuthConfig.MAX_ITERATIONS}`,
       );
+    }
+  }
+
+  public ensurePasswordResetEnabled(): void {
+    if (!this.passwordReset) {
+      throw new Error("Password reset is not enabled");
     }
   }
 }

@@ -1,3 +1,4 @@
+import { AppsScriptAuthPassword } from "./api/AppsScriptAuthPassword";
 import { AppsScriptAuthSession } from "./api/AppsScriptAuthSession";
 import { AppsScriptAuthSignIn } from "./api/AppsScriptAuthSignIn";
 import { AppsScriptAuthSignOut } from "./api/AppsScriptAuthSignOut";
@@ -39,6 +40,7 @@ export class AppsScriptAuth {
   public readonly signUp: AppsScriptAuthSignUp;
   public readonly session: AppsScriptAuthSession;
   public readonly signOut: AppsScriptAuthSignOut;
+  public readonly password: AppsScriptAuthPassword | undefined;
 
   constructor({
     repository,
@@ -86,5 +88,15 @@ export class AppsScriptAuth {
     });
 
     this.signOut = new AppsScriptAuthSignOut(sessionStorage);
+
+    if (emailPasswordConfig?.passwordReset) {
+      this.password = new AppsScriptAuthPassword({
+        repository,
+        utilities: runtime.utilities,
+        emailPassword: emailPasswordConfig,
+      });
+    } else {
+      this.password = undefined;
+    }
   }
 }
