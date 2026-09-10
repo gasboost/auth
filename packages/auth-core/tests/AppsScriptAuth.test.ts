@@ -218,4 +218,55 @@ describe("AppsScriptAuth", () => {
     expect(auth.password?.forgot).toBeTypeOf("function");
     expect(auth.password?.reset).toBeTypeOf("function");
   });
+
+  it("RPC handlersを公開する", () => {
+    const auth = new AppsScriptAuth({
+      repository: createRepository(),
+      runtime: createRuntime(),
+      session: {
+        storageType: "cache",
+      },
+    });
+
+    expect(auth.handlers).toEqual({
+      signInEmail: auth.signIn.email,
+      signInAppsScript: auth.signIn.appsScript,
+      signUpEmail: auth.signUp.email,
+      signUpAppsScript: auth.signUp.appsScript,
+      getSession: expect.any(Function),
+      signOut: expect.any(Function),
+    });
+  });
+
+  it("handlers.getSessionからsession.getを実行できる", async () => {
+    const auth = new AppsScriptAuth({
+      repository: createRepository(),
+      runtime: createRuntime(),
+      session: {
+        storageType: "cache",
+      },
+    });
+
+    const get = vi.spyOn(auth.session, "get").mockResolvedValue(null);
+
+    await auth.handlers.getSession("session-1");
+
+    expect(get).toHaveBeenCalledWith("session-1");
+  });
+
+  it("handlers.signOutからsignOut.executeを実行できる", async () => {
+    const auth = new AppsScriptAuth({
+      repository: createRepository(),
+      runtime: createRuntime(),
+      session: {
+        storageType: "cache",
+      },
+    });
+
+    const execute = vi.spyOn(auth.signOut, "execute").mockResolvedValue();
+
+    await auth.handlers.signOut("session-1");
+
+    expect(execute).toHaveBeenCalledWith("session-1");
+  });
 });

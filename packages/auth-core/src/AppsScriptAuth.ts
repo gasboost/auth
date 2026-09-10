@@ -27,15 +27,39 @@ type AppsScriptRuntime = {
   propertiesService: GoogleAppsScript.Properties.PropertiesService;
 };
 
-type AppsScriptAuthConfig = {
+type AppsScriptAuthConfig<
+  TEmailPassword extends EmailPasswordAuthOptions | undefined = undefined,
+> = {
   repository: AppsScriptAuthRepository;
   session: SessionConfig;
   runtime: AppsScriptRuntime;
-  emailPassword?: EmailPasswordAuthOptions;
+  emailPassword?: TEmailPassword;
   appsScript?: AppsScriptAuthenticationOptions;
 };
 
-export class AppsScriptAuth {
+type BaseHandlers = {
+  signInEmail: AppsScriptAuthSignIn["email"];
+  signInAppsScript: AppsScriptAuthSignIn["appsScript"];
+  signUpEmail: AppsScriptAuthSignUp["email"];
+  signUpAppsScript: AppsScriptAuthSignUp["appsScript"];
+  getSession: AppsScriptAuthSession["get"];
+  signOut: AppsScriptAuthSignOut["execute"];
+};
+
+type PasswordHandlers = {
+  forgotPassword: AppsScriptAuthPassword["forgot"];
+  resetPassword: AppsScriptAuthPassword["reset"];
+};
+
+type AppsScriptAuthHandlers<TEmailPassword> = TEmailPassword extends {
+  passwordReset: unknown;
+}
+  ? BaseHandlers & PasswordHandlers
+  : BaseHandlers;
+
+export class AppsScriptAuth<
+  TEmailPassword extends EmailPasswordAuthOptions | undefined = undefined,
+> {
   public readonly signIn: AppsScriptAuthSignIn;
   public readonly signUp: AppsScriptAuthSignUp;
   public readonly session: AppsScriptAuthSession;
@@ -48,7 +72,7 @@ export class AppsScriptAuth {
     runtime,
     emailPassword,
     appsScript,
-  }: AppsScriptAuthConfig) {
+  }: AppsScriptAuthConfig<TEmailPassword>) {
     const sessionStorage = sessionStorageFactory(session.storageType, {
       cacheService: runtime.cacheService,
       propertiesService: runtime.propertiesService,
@@ -98,5 +122,25 @@ export class AppsScriptAuth {
     } else {
       this.password = undefined;
     }
+  }
+
+  public get handlers(): AppsScriptAuthHandlers<TEmailPassword> {
+    const handlers = {
+      signInEmail: this.signIn.email,
+      signInAppsScript: this.signIn.appsScript,
+      signUpEmail: this.signUp.email,
+      signUpAppsScript: this.signUp.appsScript,
+      getSession: this.session.get.bind(this.session),
+      signOut: this.signOut.execute.bind(this.signOut),
+
+      ...(this.password
+        ? {
+            forgotPassword: this.password.forgot.bind(this.password),
+            resetPassword: this.password.reset.bind(this.password),
+          }
+        : {}),
+    };
+
+    return handlers as AppsScriptAuthHandlers<TEmailPassword>;
   }
 }
