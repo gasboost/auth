@@ -1,5 +1,6 @@
 import type { EmailPasswordAuthConfig } from "../authentication/EmailPasswordAuthentication";
 import { authPattern } from "../AuthPattern";
+import { InvalidPasswordResetError } from "../domain/Errors";
 import { Password } from "../domain/Password";
 import { PasswordCredential } from "../domain/PasswordCredential";
 import { PasswordResetToken } from "../domain/PasswordResetToken";
@@ -100,7 +101,7 @@ export class AppsScriptAuthPassword {
       );
 
     if (credential === null) {
-      throw new Error("Invalid password reset token");
+      throw new InvalidPasswordResetError();
     }
 
     const password = new Password(
