@@ -40,7 +40,7 @@ export class AppsScriptAuth {
   public readonly signUp: AppsScriptAuthSignUp;
   public readonly session: AppsScriptAuthSession;
   public readonly signOut: AppsScriptAuthSignOut;
-  public readonly password: AppsScriptAuthPassword;
+  public readonly password: AppsScriptAuthPassword | undefined;
 
   constructor({
     repository,
@@ -89,14 +89,14 @@ export class AppsScriptAuth {
 
     this.signOut = new AppsScriptAuthSignOut(sessionStorage);
 
-    if (!emailPasswordConfig) {
-      throw new Error("Email password authentication is not enabled.");
+    if (emailPasswordConfig) {
+      this.password = new AppsScriptAuthPassword({
+        repository,
+        utilities: runtime.utilities,
+        emailPassword: emailPasswordConfig,
+      });
+    } else {
+      this.password = undefined;
     }
-
-    this.password = new AppsScriptAuthPassword({
-      repository,
-      utilities: runtime.utilities,
-      emailPassword: emailPasswordConfig,
-    });
   }
 }

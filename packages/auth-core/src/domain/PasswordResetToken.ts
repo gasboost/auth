@@ -9,7 +9,7 @@ export class PasswordResetToken {
 
   public hash(utilities: GoogleAppsScript.Utilities.Utilities): string {
     const tokenHash = utilities
-      .computeDigest(Utilities.DigestAlgorithm.SHA_256, this.value)
+      .computeDigest(utilities.DigestAlgorithm.SHA_256, this.value)
       .map((b) => ("00" + (b & 0xff).toString(16)).slice(-2))
       .join("");
     return tokenHash;

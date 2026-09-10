@@ -1,5 +1,6 @@
 import { EmailPasswordIdentity } from "../identity/EmailPasswordIdentity";
 import { Account } from "./Account";
+import { InvalidPasswordResetError } from "./Errors";
 import type { HashedPassword } from "./Password";
 import { PasswordReset } from "./PasswordReset";
 
@@ -61,23 +62,23 @@ export class PasswordCredential {
     now: Date;
   }): PasswordCredential {
     if (this.reset === null) {
-      throw new Error("Password reset not found");
+      throw new InvalidPasswordResetError();
     }
 
     if (this.reset.accountId !== this.account.id) {
-      throw new Error("Password reset account mismatch");
+      throw new InvalidPasswordResetError();
     }
 
     if (this.reset.enabled === false) {
-      throw new Error("Password reset disabled");
+      throw new InvalidPasswordResetError();
     }
 
     if (this.reset.isExpired(now)) {
-      throw new Error("Password reset expired");
+      throw new InvalidPasswordResetError();
     }
 
     if (this.reset.verify(token, utilities) === false) {
-      throw new Error("Invalid password reset token");
+      throw new InvalidPasswordResetError();
     }
 
     if (!(this.account.identity instanceof EmailPasswordIdentity)) {
