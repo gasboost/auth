@@ -89,7 +89,7 @@ export class AppsScriptAuth {
 
     this.signOut = new AppsScriptAuthSignOut(sessionStorage);
 
-    if (emailPasswordConfig) {
+    if (emailPasswordConfig?.passwordReset) {
       this.password = new AppsScriptAuthPassword({
         repository,
         utilities: runtime.utilities,
