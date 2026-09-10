@@ -18,10 +18,11 @@ export class SheetOrmAccountRepository<
   T extends SheetOrmSchema,
   U extends SheetOrmTableName<T>,
   A extends SheetOrmTableName<T>,
+  R extends SheetOrmTableName<T>,
 > {
   constructor(
     public readonly db: SheetDB<T>,
-    public readonly schema: SheetOrmAuthSchema<T, U, A>,
+    public readonly schema: SheetOrmAuthSchema<T, U, A, R>,
   ) {}
 
   public async findByIdentity(

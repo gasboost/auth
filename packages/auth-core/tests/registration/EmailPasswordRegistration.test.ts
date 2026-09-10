@@ -23,6 +23,10 @@ function createRepository({
       find: vi.fn(),
       create: vi.fn(async (user: User) => user),
     },
+    passwordCredential: {
+      findByResetTokenHash: vi.fn().mockResolvedValue(null),
+      save: vi.fn(),
+    },
   } satisfies AppsScriptAuthRepository;
 }
 

@@ -16,6 +16,14 @@ export function createAuthSchema<const S extends AuthSchema>(schema: S) {
     [schema.account.fields.passwordHash]: z.string().nullable(),
   });
 
+  const passwordResetSchema = z.object({
+    [schema.passwordReset.fields.id]: z.string(),
+    [schema.passwordReset.fields.accountId]: z.string(),
+    [schema.passwordReset.fields.tokenHash]: z.string(),
+    [schema.passwordReset.fields.expiresAt]: z.date(),
+    [schema.passwordReset.fields.enabled]: z.boolean(),
+  });
+
   const userTable = new SheetTable<S["user"]["modelName"], typeof userSchema>({
     dbId: schema.dbId,
     name: schema.user.modelName,
@@ -33,5 +41,15 @@ export function createAuthSchema<const S extends AuthSchema>(schema: S) {
     primaryKey: schema.account.fields.id,
   });
 
-  return [userTable, accountTable] as const;
+  const passwordResetTable = new SheetTable<
+    S["passwordReset"]["modelName"],
+    typeof passwordResetSchema
+  >({
+    dbId: schema.dbId,
+    name: schema.passwordReset.modelName,
+    schema: passwordResetSchema,
+    primaryKey: schema.passwordReset.fields.id,
+  });
+
+  return [userTable, accountTable, passwordResetTable] as const;
 }

@@ -55,11 +55,28 @@ export type SheetOrmAccountSchema<
   };
 };
 
+export type SheetOrmPasswordResetSchema<
+  T extends SheetOrmSchema,
+  N extends SheetOrmTableName<T>,
+> = AuthSchema["passwordReset"] & {
+  modelName: N;
+
+  fields: {
+    id: SheetOrmFieldAccepting<T, N, string>;
+    accountId: SheetOrmFieldAccepting<T, N, string>;
+    tokenHash: SheetOrmFieldAccepting<T, N, string>;
+    expiresAt: SheetOrmFieldAccepting<T, N, Date>;
+    enabled: SheetOrmFieldAccepting<T, N, boolean>;
+  };
+};
+
 export type SheetOrmAuthSchema<
   T extends SheetOrmSchema,
   U extends SheetOrmTableName<T>,
   A extends SheetOrmTableName<T>,
+  R extends SheetOrmTableName<T>,
 > = {
   user: SheetOrmUserSchema<T, U>;
   account: SheetOrmAccountSchema<T, A>;
+  passwordReset: SheetOrmPasswordResetSchema<T, R>;
 };

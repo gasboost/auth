@@ -95,6 +95,17 @@ const authSchema = {
       passwordHash: "passwordHash",
     },
   },
+
+  passwordReset: {
+    modelName: "passwordReset",
+    fields: {
+      id: "id",
+      accountId: "accountId",
+      tokenHash: "tokenHash",
+      expiresAt: "expiresAt",
+      enabled: "enabled",
+    },
+  },
 } as const satisfies AuthSchema;
 
 function createRepository() {

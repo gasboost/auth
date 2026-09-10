@@ -19,9 +19,10 @@ export class SheetOrmUserRepository<
   T extends SheetOrmSchema,
   U extends SheetOrmTableName<T>,
   A extends SheetOrmTableName<T>,
+  R extends SheetOrmTableName<T>,
 > {
   public readonly db: SheetDB<T>;
-  public readonly schema: SheetOrmAuthSchema<T, U, A>;
+  public readonly schema: SheetOrmAuthSchema<T, U, A, R>;
   public readonly userTable: SheetOrmTableByName<T, U>;
   public readonly accountTable: SheetOrmTableByName<T, A>;
 
@@ -31,7 +32,7 @@ export class SheetOrmUserRepository<
     tables,
   }: {
     db: SheetDB<T>;
-    schema: SheetOrmAuthSchema<T, U, A>;
+    schema: SheetOrmAuthSchema<T, U, A, R>;
     tables: T;
   }) {
     this.db = db;

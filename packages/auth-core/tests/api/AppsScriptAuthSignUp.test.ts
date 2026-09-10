@@ -15,16 +15,20 @@ import { EmailPasswordIdentity } from "../../src/identity/EmailPasswordIdentity"
 import type { AppsScriptAuthRepository } from "../../src/storage/AppsScriptAuthRepository";
 import type { AppsScriptSessionStorage } from "../../src/storage/AppsScriptSessionStorage";
 
-function createRepository(): AppsScriptAuthRepository {
+function createRepository() {
   return {
     account: {
-      findByIdentity: vi.fn(),
+      findByIdentity: vi.fn().mockResolvedValue(null),
     },
     user: {
-      find: vi.fn(),
+      find: vi.fn().mockResolvedValue(null),
       create: vi.fn(),
     },
-  };
+    passwordCredential: {
+      findByResetTokenHash: vi.fn().mockResolvedValue(null),
+      save: vi.fn(),
+    },
+  } satisfies AppsScriptAuthRepository;
 }
 
 function createSessionStorage(): AppsScriptSessionStorage {

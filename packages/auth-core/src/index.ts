@@ -14,6 +14,8 @@ export { Account } from "./domain/Account";
 export { User } from "./domain/User";
 
 export { HashedPassword, Password } from "./domain/Password";
+export { PasswordCredential } from "./domain/PasswordCredential";
+export { PasswordReset } from "./domain/PasswordReset";
 
 export { AppsScriptIdentity } from "./identity/AppsScriptIdentity";
 export { EmailPasswordIdentity } from "./identity/EmailPasswordIdentity";

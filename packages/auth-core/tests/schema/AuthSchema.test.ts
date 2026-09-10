@@ -10,6 +10,7 @@ describe("AuthSchemaConfig", () => {
 
     expect(config.schema).toEqual({
       dbId: "spreadsheet-id",
+
       user: {
         modelName: "user",
         fields: {
@@ -17,6 +18,7 @@ describe("AuthSchemaConfig", () => {
           name: "name",
         },
       },
+
       account: {
         modelName: "account",
         fields: {
@@ -25,6 +27,17 @@ describe("AuthSchemaConfig", () => {
           provider: "provider",
           providerAccountId: "providerAccountId",
           passwordHash: "passwordHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
         },
       },
     });
@@ -97,6 +110,7 @@ describe("AuthSchemaConfig", () => {
 
     expect(config.schema).toEqual({
       dbId: "spreadsheet-id",
+
       user: {
         modelName: "user",
         fields: {
@@ -104,6 +118,7 @@ describe("AuthSchemaConfig", () => {
           name: "displayName",
         },
       },
+
       account: {
         modelName: "account",
         fields: {
@@ -112,6 +127,17 @@ describe("AuthSchemaConfig", () => {
           provider: "provider",
           providerAccountId: "providerAccountId",
           passwordHash: "credentialHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
         },
       },
     });

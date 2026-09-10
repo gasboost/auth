@@ -7,15 +7,23 @@ import type {
   SheetOrmSchema,
   SheetOrmTableName,
 } from "./SheetOrmAuthSchema";
+import { SheetOrmPasswordCredentialRepository } from "./SheetOrmPasswordCredentialRepository";
 import { SheetOrmUserRepository } from "./SheetOrmUserRepository";
 
 export class SheetOrmAuthRepository<
   T extends SheetOrmSchema,
   U extends SheetOrmTableName<T>,
   A extends SheetOrmTableName<T>,
+  R extends SheetOrmTableName<T>,
 > implements AppsScriptAuthRepository {
-  public readonly account: SheetOrmAccountRepository<T, U, A>;
-  public readonly user: SheetOrmUserRepository<T, U, A>;
+  public readonly account: SheetOrmAccountRepository<T, U, A, R>;
+  public readonly user: SheetOrmUserRepository<T, U, A, R>;
+  public readonly passwordCredential: SheetOrmPasswordCredentialRepository<
+    T,
+    U,
+    A,
+    R
+  >;
 
   constructor({
     db,
@@ -23,12 +31,18 @@ export class SheetOrmAuthRepository<
     tables,
   }: {
     db: SheetDB<T>;
-    schema: SheetOrmAuthSchema<T, U, A>;
+    schema: SheetOrmAuthSchema<T, U, A, R>;
     tables: T;
   }) {
     this.account = new SheetOrmAccountRepository(db, schema);
 
     this.user = new SheetOrmUserRepository({
+      db,
+      schema,
+      tables,
+    });
+
+    this.passwordCredential = new SheetOrmPasswordCredentialRepository({
       db,
       schema,
       tables,
