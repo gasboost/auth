@@ -1,0 +1,133 @@
+name: Publish
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  check-versions:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    outputs:
+      publish-auth: ${{ steps.versions.outputs.publish-auth }}
+      publish-sheetorm: ${{ steps.versions.outputs.publish-sheetorm }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Check package versions
+        id: versions
+        run: |
+          check_package() {
+            local output="$1"
+            local manifest="$2"
+            local name
+            local version
+
+            name=$(node -p "require('./${manifest}').name")
+            version=$(node -p "require('./${manifest}').version")
+
+            echo "${name}@${version}"
+
+            if npm view "${name}@${version}" version > /dev/null 2>&1; then
+              echo "${output}=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "${output}=true" >> "$GITHUB_OUTPUT"
+            fi
+          }
+
+          check_package publish-auth packages/auth-core/package.json
+          check_package publish-sheetorm packages/auth-sheetorm/package.json
+
+  publish:
+    needs: check-versions
+    if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck auth
+        if: ${{ needs.check-versions.outputs.publish-auth == 'true' }}
+        run: pnpm --filter @gasboost/auth typecheck
+
+      - name: Test auth
+        if: ${{ needs.check-versions.outputs.publish-auth == 'true' }}
+        run: pnpm --filter @gasboost/auth test
+
+      - name: Build auth
+        if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' }}
+        run: pnpm --filter @gasboost/auth build
+
+      - name: Typecheck auth-sheetorm
+        if: ${{ needs.check-versions.outputs.publish-sheetorm == 'true' }}
+        run: pnpm --filter @gasboost/auth-sheetorm typecheck
+
+      - name: Test auth-sheetorm
+        if: ${{ needs.check-versions.outputs.publish-sheetorm == 'true' }}
+        run: pnpm --filter @gasboost/auth-sheetorm test
+
+      - name: Build auth-sheetorm
+        if: ${{ needs.check-versions.outputs.publish-sheetorm == 'true' }}
+        run: pnpm --filter @gasboost/auth-sheetorm build
+
+      - name: Verify auth package contents
+        if: ${{ needs.check-versions.outputs.publish-auth == 'true' }}
+        working-directory: packages/auth-core
+        run: pnpm pack
+
+      - name: Publish auth
+        if: ${{ needs.check-versions.outputs.publish-auth == 'true' }}
+        working-directory: packages/auth-core
+        run: pnpm publish --access public --no-git-checks
+
+      - name: Verify auth-sheetorm package contents
+        if: ${{ needs.check-versions.outputs.publish-sheetorm == 'true' }}
+        working-directory: packages/auth-sheetorm
+        run: pnpm pack
+
+      - name: Publish auth-sheetorm
+        if: ${{ needs.check-versions.outputs.publish-sheetorm == 'true' }}
+        working-directory: packages/auth-sheetorm
+        run: pnpm publish --access public --no-git-checks
