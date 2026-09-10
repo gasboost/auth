@@ -1,23 +1,51 @@
 {
   "name": "@gasboost/auth-sheetorm",
   "version": "0.1.0",
+  "description": "SheetORM repository adapter for @gasboost/auth.",
+  "keywords": [
+    "google-apps-script",
+    "gas",
+    "authentication",
+    "auth",
+    "sheetorm",
+    "spreadsheet",
+    "repository",
+    "typescript",
+    "gasboost"
+  ],
+  "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/gasboost/auth.git",
     "directory": "packages/auth-sheetorm"
+  },
+  "bugs": {
+    "url": "https://github.com/gasboost/auth/issues"
+  },
+  "homepage": "https://github.com/gasboost/auth#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@gasboost/auth": "workspace:*",
     "@gasboost/sheetorm": "^1.0.0",
     "zod": "^4.5.4"
   },
-  "exports": {
-    ".": {
-      "default": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+  "devDependencies": {
+    "@gasboost/fake-core": "^0.1.2",
+    "@gasboost/fake-node": "^0.1.2"
   },
   "scripts": {
     "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
@@ -26,9 +54,5 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "rm -rf dist && tsc -p tsconfig.build.json"
-  },
-  "devDependencies": {
-    "@gasboost/fake-core": "^0.1.2",
-    "@gasboost/fake-node": "^0.1.2"
   }
 }

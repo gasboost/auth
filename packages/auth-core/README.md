@@ -468,7 +468,6 @@ const auth = new AppsScriptAuth({
 
 以下は auth-core の責務外として後続 package / Issue で扱います。
 
-- SheetORM adapter
 - Schema / modelName / field mapping
 - database session storage
 - plugin system
