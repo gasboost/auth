@@ -1,24 +1,48 @@
 {
   "name": "@gasboost/auth",
   "version": "0.1.0",
+  "description": "Modern authentication for Google Apps Script with email/password, Apps Script authentication, sessions, and password reset.",
+  "keywords": [
+    "google-apps-script",
+    "gas",
+    "authentication",
+    "auth",
+    "typescript",
+    "email-password",
+    "session",
+    "password-reset",
+    "gasboost"
+  ],
+  "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/gasboost/auth.git",
     "directory": "packages/auth-core"
+  },
+  "bugs": {
+    "url": "https://github.com/gasboost/auth/issues"
+  },
+  "homepage": "https://github.com/gasboost/auth#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@gasboost/app": "^1.3.0",
     "@gasboost/fake-core": "^0.1.2",
     "@gasboost/fake-node": "^0.1.2",
     "@types/google-apps-script": "^2.0.13"
-  },
-  "exports": {
-    ".": {
-      "default": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
   },
   "scripts": {
     "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
