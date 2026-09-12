@@ -81,9 +81,10 @@ export class SignIn<TCredential, THookResult = undefined> {
     } catch (error) {
       try {
         await this.sessionStorage.delete(session.id);
-      } finally {
-        throw error;
+      } catch {
+        // Preserve the original hook error.
       }
+      throw error;
     }
   }
 }

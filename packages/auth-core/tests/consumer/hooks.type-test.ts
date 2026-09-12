@@ -44,7 +44,7 @@ async function withHooks() {
   const token: string = result.hooks.customToken;
 
   // @ts-expect-error customToken is string
-  const invalidToken: number = result.hooks.customToken;
+  const _invalidToken: number = result.hooks.customToken;
 
   return token;
 }
@@ -73,11 +73,11 @@ async function withoutHooks() {
     password: "password",
   });
 
-  result.user;
-  result.session;
+  void result.user;
+  void result.session;
 
   // @ts-expect-error hooks does not exist when hooks are not configured
-  result.hooks;
+  void result.hooks;
 }
 
 void withHooks;
