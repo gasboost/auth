@@ -1,0 +1,57 @@
+{
+  "name": "@gasboost/auth-realtime-firebase",
+  "version": "0.1.0",
+  "description": "Firebase Authentication integration adapter for @gasboost/auth.",
+  "keywords": [
+    "google-apps-script",
+    "gas",
+    "authentication",
+    "auth",
+    "firebase",
+    "firebase-authentication",
+    "custom-token",
+    "typescript",
+    "gasboost"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gasboost/auth.git",
+    "directory": "packages/auth-realtime-firebase"
+  },
+  "bugs": {
+    "url": "https://github.com/gasboost/auth/issues"
+  },
+  "homepage": "https://github.com/gasboost/auth#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@gasboost/auth": "workspace:*",
+    "@gasboost/realtime-firebase": "^0.2.0"
+  },
+  "devDependencies": {
+    "@gasboost/fake-node": "^0.1.2",
+    "@types/node": "^26.4.1"
+  },
+  "scripts": {
+    "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "format:fix": "prettier --write . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "lint": "eslint . --config ../../eslint.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
+  }
+}

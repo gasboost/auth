@@ -60,3 +60,16 @@ jobs:
 
       - name: Build auth-sheetorm
         run: pnpm --filter @gasboost/auth-sheetorm build
+
+      - name: Typecheck auth-realtime-firebase
+        run: pnpm --filter @gasboost/auth-realtime-firebase typecheck
+
+      - name: Test auth-realtime-firebase
+        run: pnpm --filter @gasboost/auth-realtime-firebase test
+
+      - name: Build auth-realtime-firebase
+        run: pnpm --filter @gasboost/auth-realtime-firebase build
+
+      - name: Pack auth-realtime-firebase
+        working-directory: packages/auth-realtime-firebase
+        run: pnpm pack
