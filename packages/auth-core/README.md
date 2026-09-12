@@ -247,6 +247,177 @@ User 検索
 Session 発行
 ```
 
+## Authentication Hooks
+
+`@gasboost/auth` は、認証成功後に外部処理を実行するための lifecycle hook を提供します。
+
+現在は `afterSignIn` を利用できます。
+
+```ts
+import { AppsScriptAuth, type EmailPasswordAuthOptions } from "@gasboost/auth";
+
+type HookResult = {
+  readonly customToken: string;
+};
+
+const auth = new AppsScriptAuth<EmailPasswordAuthOptions, HookResult>({
+  repository,
+  runtime,
+
+  session: {
+    storageType: "cache",
+  },
+
+  emailPassword: {
+    enabled: true,
+    pepper,
+  },
+
+  hooks: {
+    afterSignIn: ({ user, session }) => ({
+      customToken: `${user.id}:${session.id}`,
+    }),
+  },
+});
+```
+
+`afterSignIn` には、認証された `User` と発行済みの `Session` が渡されます。
+
+```ts
+hooks: {
+  afterSignIn: ({ user, session }) => {
+    user.id;
+    session.id;
+
+    return {
+      customToken: "...",
+    };
+  },
+},
+```
+
+hook の戻り値は Sign In result の `hooks` から取得できます。
+
+```ts
+const result = await auth.signIn.email({
+  email: "user@example.com",
+  password: "password",
+});
+
+result.user;
+result.session;
+result.hooks.customToken;
+```
+
+hook result の型は `AppsScriptAuth` の第2型引数として指定できます。
+
+```ts
+type HookResult = {
+  readonly customToken: string;
+};
+
+const auth = new AppsScriptAuth<EmailPasswordAuthOptions, HookResult>({
+  // ...
+});
+```
+
+hook を設定しない場合、従来どおり Sign In result は `user` と `session` のみを返します。
+
+```ts
+const auth = new AppsScriptAuth({
+  repository,
+  runtime,
+
+  session: {
+    storageType: "cache",
+  },
+});
+
+const result = await auth.signIn.appsScript({});
+
+result.user;
+result.session;
+```
+
+### Async Hook
+
+`afterSignIn` は async 処理にも対応しています。
+
+```ts
+hooks: {
+  afterSignIn: async ({ user, session }) => {
+    const value = await createExternalCredential({
+      user,
+      session,
+    });
+
+    return {
+      value,
+    };
+  },
+},
+```
+
+### Hook Failure
+
+`afterSignIn` は Sign In 処理の一部として扱われます。
+
+処理順序は以下です。
+
+```text
+authentication
+      ↓
+User
+      ↓
+Session 発行
+      ↓
+Session 保存
+      ↓
+afterSignIn
+      ↓
+Sign In result
+```
+
+`afterSignIn` で例外が発生した場合、Sign In 全体が失敗します。
+
+その際、すでに保存された Session は SessionStorage から削除されます。
+
+```text
+afterSignIn error
+      ↓
+Session 削除
+      ↓
+error を呼び出し元へ伝播
+```
+
+これにより、外部認証情報などの生成に失敗したにもかかわらず、Gasboost 側の Session だけが有効な状態になることを防ぎます。
+
+### Package Boundary
+
+hooks API 自体は Firebase やその他の外部サービスを認識しません。
+
+```text
+@gasboost/auth
+  ↓
+afterSignIn
+  ↓
+external integration
+```
+
+例えば Firebase Custom Token を発行する場合でも、Firebase 固有の token generation は `@gasboost/auth` の責務には含めません。
+
+```text
+@gasboost/auth
+      ↓
+afterSignIn
+      ↓
+Firebase integration package
+      ↓
+Firebase Custom Token
+```
+
+`@gasboost/auth` は認証 lifecycle と拡張ポイントのみを提供し、外部サービス固有の処理は別 package から hook として接続します。
+
 ## Session
 
 ### Get Session
@@ -461,6 +632,7 @@ const auth = new AppsScriptAuth({
 - Sign In
 - Sign Up
 - Sign Out
+- Authentication lifecycle hooks (`afterSignIn`)
 - Session management
 - CacheService SessionStorage
 - PropertiesService SessionStorage

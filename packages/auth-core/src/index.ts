@@ -19,3 +19,9 @@ export { PasswordReset } from "./domain/PasswordReset";
 
 export { AppsScriptIdentity } from "./identity/AppsScriptIdentity";
 export { EmailPasswordIdentity } from "./identity/EmailPasswordIdentity";
+
+export type {
+  AfterSignInContext,
+  AfterSignInHook,
+  AuthHooks,
+} from "./hooks/AuthHooks";

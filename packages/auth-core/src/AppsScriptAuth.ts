@@ -13,6 +13,7 @@ import {
 } from "./authentication/EmailPasswordAuthentication";
 import type { SessionStorageType } from "./factory/sessionStorageFactory";
 import { sessionStorageFactory } from "./factory/sessionStorageFactory";
+import type { AuthHooks } from "./hooks/AuthHooks";
 import { AppsScriptAuthRepository } from "./storage/AppsScriptAuthRepository";
 
 type SessionConfig = {
@@ -29,17 +30,19 @@ type AppsScriptRuntime = {
 
 type AppsScriptAuthConfig<
   TEmailPassword extends EmailPasswordAuthOptions | undefined = undefined,
+  THookResult = undefined,
 > = {
   repository: AppsScriptAuthRepository;
   session: SessionConfig;
   runtime: AppsScriptRuntime;
   emailPassword?: TEmailPassword;
   appsScript?: AppsScriptAuthenticationOptions;
+  hooks?: AuthHooks<THookResult>;
 };
 
-type BaseHandlers = {
-  signInEmail: AppsScriptAuthSignIn["email"];
-  signInAppsScript: AppsScriptAuthSignIn["appsScript"];
+type BaseHandlers<THookResult> = {
+  signInEmail: AppsScriptAuthSignIn<THookResult>["email"];
+  signInAppsScript: AppsScriptAuthSignIn<THookResult>["appsScript"];
   signUpEmail: AppsScriptAuthSignUp["email"];
   signUpAppsScript: AppsScriptAuthSignUp["appsScript"];
   getSession: AppsScriptAuthSession["get"];
@@ -51,16 +54,19 @@ type PasswordHandlers = {
   resetPassword: AppsScriptAuthPassword["reset"];
 };
 
-type AppsScriptAuthHandlers<TEmailPassword> = TEmailPassword extends {
-  passwordReset: unknown;
-}
-  ? BaseHandlers & PasswordHandlers
-  : BaseHandlers;
+type AppsScriptAuthHandlers<TEmailPassword, THookResult> =
+  TEmailPassword extends {
+    passwordReset: unknown;
+  }
+    ? BaseHandlers<THookResult> & PasswordHandlers
+    : BaseHandlers<THookResult>;
 
 export class AppsScriptAuth<
   TEmailPassword extends EmailPasswordAuthOptions | undefined = undefined,
+  THookResult = undefined,
 > {
-  public readonly signIn: AppsScriptAuthSignIn;
+  public readonly signIn: AppsScriptAuthSignIn<THookResult>;
+
   public readonly signUp: AppsScriptAuthSignUp;
   public readonly session: AppsScriptAuthSession;
   public readonly signOut: AppsScriptAuthSignOut;
@@ -72,11 +78,13 @@ export class AppsScriptAuth<
     runtime,
     emailPassword,
     appsScript,
-  }: AppsScriptAuthConfig<TEmailPassword>) {
+    hooks,
+  }: AppsScriptAuthConfig<TEmailPassword, THookResult>) {
     const sessionStorage = sessionStorageFactory(session.storageType, {
       cacheService: runtime.cacheService,
       propertiesService: runtime.propertiesService,
     });
+
     const expiresIn = session.expiresIn ?? 60 * 20;
 
     const emailPasswordConfig = emailPassword
@@ -87,7 +95,7 @@ export class AppsScriptAuth<
       ? new AppsScriptAuthenticationConfig(appsScript)
       : undefined;
 
-    this.signIn = new AppsScriptAuthSignIn({
+    this.signIn = new AppsScriptAuthSignIn<THookResult>({
       sessionStorage,
       repository,
       emailPassword: emailPasswordConfig,
@@ -95,6 +103,11 @@ export class AppsScriptAuth<
       utilities: runtime.utilities,
       session: runtime.session,
       expiresIn,
+      ...(hooks?.afterSignIn
+        ? {
+            afterSignIn: hooks.afterSignIn,
+          }
+        : {}),
     });
 
     this.signUp = new AppsScriptAuthSignUp({
@@ -124,7 +137,7 @@ export class AppsScriptAuth<
     }
   }
 
-  public get handlers(): AppsScriptAuthHandlers<TEmailPassword> {
+  public get handlers(): AppsScriptAuthHandlers<TEmailPassword, THookResult> {
     const handlers = {
       signInEmail: this.signIn.email,
       signInAppsScript: this.signIn.appsScript,
@@ -141,6 +154,6 @@ export class AppsScriptAuth<
         : {}),
     };
 
-    return handlers as AppsScriptAuthHandlers<TEmailPassword>;
+    return handlers as AppsScriptAuthHandlers<TEmailPassword, THookResult>;
   }
 }
