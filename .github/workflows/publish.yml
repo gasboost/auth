@@ -20,6 +20,7 @@ jobs:
     outputs:
       publish-auth: ${{ steps.versions.outputs.publish-auth }}
       publish-sheetorm: ${{ steps.versions.outputs.publish-sheetorm }}
+      publish-realtime-firebase: ${{ steps.versions.outputs.publish-realtime-firebase }}
 
     steps:
       - name: Checkout
@@ -56,10 +57,11 @@ jobs:
 
           check_package publish-auth packages/auth-core/package.json
           check_package publish-sheetorm packages/auth-sheetorm/package.json
+          check_package publish-realtime-firebase packages/auth-realtime-firebase/package.json
 
   publish:
     needs: check-versions
-    if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' }}
+    if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' || needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -97,7 +99,7 @@ jobs:
         run: pnpm --filter @gasboost/auth test
 
       - name: Build auth
-        if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' }}
+        if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' || needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
         run: pnpm --filter @gasboost/auth build
 
       - name: Typecheck auth-sheetorm
@@ -111,6 +113,18 @@ jobs:
       - name: Build auth-sheetorm
         if: ${{ needs.check-versions.outputs.publish-sheetorm == 'true' }}
         run: pnpm --filter @gasboost/auth-sheetorm build
+
+      - name: Typecheck auth-realtime-firebase
+        if: ${{ needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
+        run: pnpm --filter @gasboost/auth-realtime-firebase typecheck
+
+      - name: Test auth-realtime-firebase
+        if: ${{ needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
+        run: pnpm --filter @gasboost/auth-realtime-firebase test
+
+      - name: Build auth-realtime-firebase
+        if: ${{ needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
+        run: pnpm --filter @gasboost/auth-realtime-firebase build
 
       - name: Verify auth package contents
         if: ${{ needs.check-versions.outputs.publish-auth == 'true' }}
@@ -130,4 +144,14 @@ jobs:
       - name: Publish auth-sheetorm
         if: ${{ needs.check-versions.outputs.publish-sheetorm == 'true' }}
         working-directory: packages/auth-sheetorm
+        run: pnpm publish --access public --no-git-checks
+
+      - name: Verify auth-realtime-firebase package contents
+        if: ${{ needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
+        working-directory: packages/auth-realtime-firebase
+        run: pnpm pack
+
+      - name: Publish auth-realtime-firebase
+        if: ${{ needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
+        working-directory: packages/auth-realtime-firebase
         run: pnpm publish --access public --no-git-checks
