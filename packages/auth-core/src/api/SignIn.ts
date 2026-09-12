@@ -1,32 +1,52 @@
 import { Authentication } from "../authentication/Authentication";
 import { Session } from "../domain/Session";
+import type { User } from "../domain/User";
+import type { AfterSignInContext, AfterSignInHook } from "../hooks/AuthHooks";
 import type { AppsScriptSessionStorage } from "../storage/AppsScriptSessionStorage";
 
-export class SignIn<T> {
+export type SignInResult<THookResult = undefined> = [THookResult] extends [
+  undefined,
+]
+  ? {
+      readonly user: User;
+      readonly session: Session;
+    }
+  : {
+      readonly user: User;
+      readonly session: Session;
+      readonly hooks: THookResult;
+    };
+
+export class SignIn<TCredential, THookResult = undefined> {
   private readonly sessionStorage: AppsScriptSessionStorage;
   private readonly expiresIn: number;
   private readonly utilities: GoogleAppsScript.Utilities.Utilities;
-  private readonly authentication: Authentication<T>;
+  private readonly authentication: Authentication<TCredential>;
+  private readonly afterSignIn: AfterSignInHook<THookResult> | undefined;
+
   constructor({
     sessionStorage,
     authentication,
     utilities,
     expiresIn,
+    afterSignIn,
   }: {
     sessionStorage: AppsScriptSessionStorage;
-    authentication: Authentication<T>;
+    authentication: Authentication<TCredential>;
     utilities: GoogleAppsScript.Utilities.Utilities;
     expiresIn: number;
+    afterSignIn?: AfterSignInHook<THookResult>;
   }) {
-    // Initialize SignIn with db, schema, and session
     this.sessionStorage = sessionStorage;
     this.authentication = authentication;
     this.utilities = utilities;
     this.expiresIn = expiresIn;
+    this.afterSignIn = afterSignIn;
   }
 
-  async execute(credential: T) {
-    // Implement the sign-in logic using the provided authentication method
+  public async execute(
+    credential: TCredential,
+  ): Promise<SignInResult<THookResult>> {
     const user = await this.authentication.verify(credential);
 
     const session = new Session({
@@ -37,6 +57,33 @@ export class SignIn<T> {
     });
 
     await this.sessionStorage.save(session);
-    return { user, session };
+
+    if (!this.afterSignIn) {
+      return {
+        user,
+        session,
+      } as SignInResult<THookResult>;
+    }
+
+    const context: AfterSignInContext = {
+      user,
+      session,
+    };
+
+    try {
+      const hooks = await this.afterSignIn(context);
+
+      return {
+        user,
+        session,
+        hooks,
+      } as SignInResult<THookResult>;
+    } catch (error) {
+      try {
+        await this.sessionStorage.delete(session.id);
+      } finally {
+        throw error;
+      }
+    }
   }
 }

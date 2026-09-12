@@ -8,13 +8,15 @@ import {
   EmailPasswordAuthentication,
   type EmailPasswordCredential,
 } from "../authentication/EmailPasswordAuthentication";
+import type { AfterSignInHook } from "../hooks/AuthHooks";
 import { AppsScriptAuthRepository } from "../storage/AppsScriptAuthRepository";
 import { AppsScriptSessionStorage } from "../storage/AppsScriptSessionStorage";
 import { SignIn } from "./SignIn";
 
-export class AppsScriptAuthSignIn {
-  public email: SignIn<EmailPasswordCredential>["execute"];
-  public appsScript: SignIn<AppsScriptCredential>["execute"];
+export class AppsScriptAuthSignIn<THookResult = undefined> {
+  public email: SignIn<EmailPasswordCredential, THookResult>["execute"];
+
+  public appsScript: SignIn<AppsScriptCredential, THookResult>["execute"];
 
   constructor({
     sessionStorage,
@@ -24,6 +26,7 @@ export class AppsScriptAuthSignIn {
     appsScript,
     session,
     utilities,
+    afterSignIn,
   }: {
     sessionStorage: AppsScriptSessionStorage;
     repository: AppsScriptAuthRepository;
@@ -32,6 +35,7 @@ export class AppsScriptAuthSignIn {
     utilities: GoogleAppsScript.Utilities.Utilities;
     session: GoogleAppsScript.Base.Session;
     expiresIn: number;
+    afterSignIn?: AfterSignInHook<THookResult>;
   }) {
     this.email = async (credential) => {
       if (!emailPassword) {
@@ -40,7 +44,7 @@ export class AppsScriptAuthSignIn {
 
       emailPassword.ensureSignInEnabled();
 
-      const emailSignIn = new SignIn({
+      const emailSignIn = new SignIn<EmailPasswordCredential, THookResult>({
         sessionStorage,
         authentication: new EmailPasswordAuthentication(
           repository,
@@ -49,6 +53,11 @@ export class AppsScriptAuthSignIn {
         ),
         utilities,
         expiresIn,
+        ...(afterSignIn
+          ? {
+              afterSignIn,
+            }
+          : {}),
       });
 
       return emailSignIn.execute(credential);
@@ -61,11 +70,16 @@ export class AppsScriptAuthSignIn {
 
       appsScript.ensureSignInEnabled();
 
-      return new SignIn({
+      return new SignIn<AppsScriptCredential, THookResult>({
         sessionStorage,
         authentication: new AppsScriptAuthentication(repository, session),
         utilities,
         expiresIn,
+        ...(afterSignIn
+          ? {
+              afterSignIn,
+            }
+          : {}),
       }).execute(credential);
     };
   }
