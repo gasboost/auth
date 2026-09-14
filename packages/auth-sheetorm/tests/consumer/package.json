@@ -7,6 +7,6 @@
     "@gasboost/sheetorm": "^2.0.0"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "pnpm --filter @gasboost/auth-sheetorm build && tsc --noEmit"
   }
 }
