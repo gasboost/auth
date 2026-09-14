@@ -1,6 +1,9 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { AuthSchemaConfig } from "../../src/schema/AuthSchema";
+import {
+  AuthSchemaConfig,
+  type AuthSchemaOptions,
+} from "../../src/schema/AuthSchema";
 
 describe("AuthSchemaConfig", () => {
   it("user/account設定を省略するとdefault schemaを返す", () => {
@@ -287,5 +290,47 @@ describe("AuthSchemaConfig", () => {
     expectTypeOf(
       config.schema.account.fields.passwordHash,
     ).toEqualTypeOf<"credentialHash">();
+  });
+
+  it("AuthSchemaOptionsとしてwidenされた値は安全なstring型として扱う", () => {
+    const options: AuthSchemaOptions = {
+      dbId: "spreadsheet-id",
+      user: {
+        modelName: "members",
+        fields: {
+          id: "memberId",
+        },
+      },
+      account: {
+        modelName: "credentials",
+      },
+      passwordReset: {
+        fields: {
+          tokenHash: "resetTokenHash",
+        },
+      },
+    };
+
+    const config = new AuthSchemaConfig(options);
+
+    expect(config.schema.user.modelName).toBe("members");
+    expect(config.schema.user.fields.id).toBe("memberId");
+    expect(config.schema.account.modelName).toBe("credentials");
+    expect(config.schema.passwordReset.fields.tokenHash).toBe("resetTokenHash");
+
+    expectTypeOf(config.schema.dbId).toEqualTypeOf<string>();
+
+    expectTypeOf(config.schema.user.modelName).toEqualTypeOf<string>();
+    expectTypeOf(config.schema.user.fields.id).toEqualTypeOf<string>();
+    expectTypeOf(config.schema.user.fields.name).toEqualTypeOf<string>();
+
+    expectTypeOf(config.schema.account.modelName).toEqualTypeOf<string>();
+    expectTypeOf(config.schema.account.fields.id).toEqualTypeOf<string>();
+    expectTypeOf(config.schema.account.fields.userId).toEqualTypeOf<string>();
+
+    expectTypeOf(config.schema.passwordReset.modelName).toEqualTypeOf<string>();
+    expectTypeOf(
+      config.schema.passwordReset.fields.tokenHash,
+    ).toEqualTypeOf<string>();
   });
 });

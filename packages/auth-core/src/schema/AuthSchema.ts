@@ -60,21 +60,27 @@ export type AuthSchema = {
   };
 };
 
-type Section<O, K extends PropertyKey> = O extends { [P in K]: infer Value }
-  ? Value
-  : undefined;
+type Section<O, K extends PropertyKey> = K extends keyof O ? O[K] : undefined;
 
-type Fields<T> = T extends { fields: infer Value } ? Value : undefined;
+type Fields<T> = [T] extends [null | undefined]
+  ? undefined
+  : "fields" extends keyof NonNullable<T>
+    ? NonNullable<T>["fields"]
+    : undefined;
 
-type PropertyOrDefault<
+type PropertyOrDefault<T, K extends PropertyKey, Default extends string> = [
   T,
-  K extends PropertyKey,
-  Default extends string,
-> = T extends { [P in K]?: infer Value }
-  ? Value extends string
-    ? Value
-    : Default
-  : Default;
+] extends [null | undefined]
+  ? Default
+  : K extends keyof NonNullable<T>
+    ? Exclude<NonNullable<T>[K], undefined> extends infer Value
+      ? [Value] extends [never]
+        ? Default
+        : Value extends string
+          ? Value
+          : Default
+      : Default
+    : Default;
 
 type ResolveAuthSchema<O extends AuthSchemaOptions> = {
   dbId: O["dbId"];
