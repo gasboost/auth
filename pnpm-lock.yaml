@@ -66,9 +66,6 @@ importers:
       '@gasboost/auth':
         specifier: workspace:*
         version: link:../auth-core
-      '@gasboost/sheetorm':
-        specifier: ^1.0.0
-        version: 1.0.0
       zod:
         specifier: ^4.5.4
         version: 4.5.4
@@ -79,6 +76,9 @@ importers:
       '@gasboost/fake-node':
         specifier: ^0.1.2
         version: 0.1.2(date-fns@4.4.0)
+      '@gasboost/sheetorm':
+        specifier: ^2.0.0
+        version: 2.0.0
 
 packages:
 
@@ -136,14 +136,17 @@ packages:
   '@gasboost/fake-node@0.1.2':
     resolution: {integrity: sha512-OJrPW+cG7TESUVuNmG6+QXa1RR1GohH3R1dxLFpXLhzYeHtETiBRoIcru+kIn6kh445UKzOp+2O0OWlzmPBJ+Q==}
 
+  '@gasboost/query@1.0.0':
+    resolution: {integrity: sha512-WTMXCp26A2eEiWTvDwZart/7Vk0DIX4SlF5aBebqRrB7CCQ748JGhuq4QuJUgq2DY5o3iMHTJf+iwD8QNqCN+g==}
+
   '@gasboost/realtime-firebase@0.2.0':
     resolution: {integrity: sha512-B4GAykPM2H0AN3EzA9BYduzN2lSZ/pBBfuyzUyg98qQDfO8bNA3m9bwI/ALe9kCQ9xYO8rsHkM81mEQJp3Pvcw==}
 
   '@gasboost/rls@0.2.0':
     resolution: {integrity: sha512-UJVGQ5rZae9d76OUuNYxNS25aJ1zfGxTENsOQvuS3vXStFHdl88QFWoQ654iNzoxDGufEPx1/aIeTP+HRgPV0Q==}
 
-  '@gasboost/sheetorm@1.0.0':
-    resolution: {integrity: sha512-GrFxkdWk+KRQdjEcl23f+9fCiydiGNVhPkFLwFoxhtBVUJv81Lzj7oXunZ4isOogWbr6Hh0c1X65yoYn2LMXqw==}
+  '@gasboost/sheetorm@2.0.0':
+    resolution: {integrity: sha512-ZK4EdSPFq5oLSv9iCw867mOL8V/NxR89Uzf6SODH5AF/c9VU7cmdgn1spPE5YivI36YeMjejvWb0qdDix7BOqA==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1088,6 +1091,10 @@ snapshots:
     transitivePeerDependencies:
       - date-fns
 
+  '@gasboost/query@1.0.0':
+    dependencies:
+      zod: 4.5.4
+
   '@gasboost/realtime-firebase@0.2.0':
     dependencies:
       '@gasboost/rls': 0.2.0
@@ -1097,8 +1104,10 @@ snapshots:
     dependencies:
       zod: 4.5.4
 
-  '@gasboost/sheetorm@1.0.0':
+  '@gasboost/sheetorm@2.0.0':
     dependencies:
+      '@gasboost/query': 1.0.0
+      '@gasboost/rls': 0.2.0
       zod: 4.5.4
 
   '@humanfs/core@0.19.2':

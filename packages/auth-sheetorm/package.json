@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-sheetorm",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SheetORM repository adapter for @gasboost/auth.",
   "keywords": [
     "google-apps-script",
@@ -40,12 +40,15 @@
   },
   "dependencies": {
     "@gasboost/auth": "workspace:*",
-    "@gasboost/sheetorm": "^1.0.0",
     "zod": "^4.5.4"
+  },
+  "peerDependencies": {
+    "@gasboost/sheetorm": "^2.0.0"
   },
   "devDependencies": {
     "@gasboost/fake-core": "^0.1.2",
-    "@gasboost/fake-node": "^0.1.2"
+    "@gasboost/fake-node": "^0.1.2",
+    "@gasboost/sheetorm": "^2.0.0"
   },
   "scripts": {
     "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
@@ -53,6 +56,7 @@
     "lint": "eslint . --config ../../eslint.config.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "build": "rm -rf dist && tsc -p tsconfig.build.json"
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "pack:check": "node ../../scripts/auth-sheetorm-pack-smoke.mjs"
   }
 }
