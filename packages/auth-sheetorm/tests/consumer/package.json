@@ -1,0 +1,12 @@
+{
+  "name": "@gasboost/auth-sheetorm-consumer-test",
+  "private": true,
+  "dependencies": {
+    "@gasboost/auth": "workspace:*",
+    "@gasboost/auth-sheetorm": "workspace:*",
+    "@gasboost/sheetorm": "^2.0.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

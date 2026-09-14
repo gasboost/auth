@@ -14,65 +14,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createAuthSchema } from "../src/createAuthSchema";
 import { SheetOrmAuthRepository } from "../src/SheetOrmAuthRepository";
-
-class TestGateway {
-  public readonly records = new Map<string, Record<string, unknown>[]>();
-
-  public currentTable = "";
-
-  public table(sheetName: string, dbId: string): void {
-    this.currentTable = `${dbId}:${sheetName}`;
-
-    if (!this.records.has(this.currentTable)) {
-      this.records.set(this.currentTable, []);
-    }
-  }
-
-  public read(): Record<string, unknown>[] {
-    return (this.records.get(this.currentTable) ?? []).map((record) => ({
-      ...record,
-    }));
-  }
-
-  public insert(records: Record<string, unknown>[]): void {
-    const current = this.records.get(this.currentTable) ?? [];
-
-    current.push(
-      ...records.map((record) => ({
-        ...record,
-      })),
-    );
-
-    this.records.set(this.currentTable, current);
-  }
-
-  public rewrite(records: Record<string, unknown>[]): void {
-    this.records.set(
-      this.currentTable,
-      records.map((record) => ({
-        ...record,
-      })),
-    );
-  }
-
-  public setColumns(): void {}
-
-  public count(): number {
-    return (this.records.get(this.currentTable) ?? []).length;
-  }
-
-  public lastId(pk: string): number {
-    const records = this.records.get(this.currentTable) ?? [];
-
-    return records.reduce((max, record) => {
-      const value = record[pk];
-
-      return typeof value === "number" ? Math.max(max, value) : max;
-    }, 0);
-  }
-
-  public protect(): void {}
-}
+import { TestGateway } from "./TestGateway";
 
 const authSchema = {
   dbId: "auth-db",
@@ -357,6 +299,7 @@ describe("SheetOrmPasswordCredentialRepository", () => {
     await repository.passwordCredential.save(updatedCredential);
 
     const [accountRecord] = db.table("account").find();
+
     const [resetRecord] = db.table("passwordReset").find();
 
     expect(accountRecord.passwordHash).toBe("new-password-hash");
@@ -401,6 +344,7 @@ describe("SheetOrmPasswordCredentialRepository", () => {
 
     vi.spyOn(db, "update").mockImplementation((records) => {
       writeStates.push(transactionRunning);
+
       return originalUpdate(records);
     });
 
@@ -408,6 +352,7 @@ describe("SheetOrmPasswordCredentialRepository", () => {
 
     vi.spyOn(db, "upsert").mockImplementation((records) => {
       writeStates.push(transactionRunning);
+
       return originalUpsert(records);
     });
 
