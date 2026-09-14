@@ -63,13 +63,13 @@ importers:
 
   packages/auth-sheetorm:
     dependencies:
-      '@gasboost/auth':
-        specifier: workspace:*
-        version: link:../auth-core
       zod:
         specifier: ^4.5.4
         version: 4.5.4
     devDependencies:
+      '@gasboost/auth':
+        specifier: workspace:*
+        version: link:../auth-core
       '@gasboost/fake-core':
         specifier: ^0.1.2
         version: 0.1.2
