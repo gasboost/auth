@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
+
 const rootDirectory = resolve(scriptDirectory, "..");
 
 const authDirectory = join(rootDirectory, "packages", "auth-core");
@@ -35,6 +36,7 @@ function run(command, args, options = {}) {
   if (result.status !== 0) {
     if (options.capture) {
       process.stderr.write(result.stdout ?? "");
+
       process.stderr.write(result.stderr ?? "");
     }
 
@@ -66,6 +68,16 @@ function readPackedPackageJson(tarball) {
   return JSON.parse(content);
 }
 
+function ensurePeerDependency({ packageJson, packageName, version }) {
+  if (packageJson.dependencies?.[packageName] !== undefined) {
+    throw new Error(`${packageName} must not be included in dependencies`);
+  }
+
+  if (packageJson.peerDependencies?.[packageName] !== version) {
+    throw new Error(`${packageName} peerDependency must be "${version}"`);
+  }
+}
+
 try {
   mkdirSync(packageDirectory, {
     recursive: true,
@@ -93,15 +105,17 @@ try {
 
   const packedPackageJson = readPackedPackageJson(authSheetOrmTarball);
 
-  if (packedPackageJson.dependencies?.["@gasboost/sheetorm"] !== undefined) {
-    throw new Error("@gasboost/sheetorm must not be included in dependencies");
-  }
+  ensurePeerDependency({
+    packageJson: packedPackageJson,
+    packageName: "@gasboost/auth",
+    version: "^0.2.0",
+  });
 
-  if (packedPackageJson.peerDependencies?.["@gasboost/sheetorm"] !== "^2.0.0") {
-    throw new Error('@gasboost/sheetorm peerDependency must be "^2.0.0"');
-  }
-
-  const authTarballDependency = `file:${authTarball}`;
+  ensurePeerDependency({
+    packageJson: packedPackageJson,
+    packageName: "@gasboost/sheetorm",
+    version: "^2.0.0",
+  });
 
   writeFileSync(
     join(consumerDirectory, "package.json"),
@@ -110,14 +124,10 @@ try {
         name: "auth-sheetorm-pack-smoke",
         private: true,
         dependencies: {
-          "@gasboost/auth": authTarballDependency,
+          "@gasboost/auth": `file:${authTarball}`,
           "@gasboost/auth-sheetorm": `file:${authSheetOrmTarball}`,
           "@gasboost/sheetorm": "2.0.0",
-        },
-        pnpm: {
-          overrides: {
-            "@gasboost/auth": authTarballDependency,
-          },
+          typescript: "^7.0.0-dev.20260901",
         },
       },
       null,
@@ -147,21 +157,63 @@ try {
 
   writeFileSync(
     join(consumerDirectory, "index.ts"),
-    `import { AuthSchemaConfig } from "@gasboost/auth";
-import { createAuthSchema } from "@gasboost/auth-sheetorm";
-import { SheetDB } from "@gasboost/sheetorm";
+    `import {
+  AppsScriptAuth,
+  AuthSchemaConfig,
+} from "@gasboost/auth";
 
-const config = new AuthSchemaConfig({
-  dbId: "spreadsheet-id",
-});
+import {
+  createAuthSchema,
+  SheetOrmAuthRepository,
+} from "@gasboost/auth-sheetorm";
 
-const tables = createAuthSchema(config.schema);
+import {
+  SheetDB,
+} from "@gasboost/sheetorm";
 
-new SheetDB({
+const authSchemaConfig =
+  new AuthSchemaConfig({
+    dbId: "spreadsheet-id",
+  });
+
+const tables =
+  createAuthSchema(
+    authSchemaConfig.schema,
+  );
+
+const db = new SheetDB({
   tables,
   gateway: {} as never,
   cacheService: {} as never,
   utilities: {} as never,
+});
+
+const repository =
+  new SheetOrmAuthRepository({
+    db,
+    schema:
+      authSchemaConfig.schema,
+    tables,
+  });
+
+new AppsScriptAuth({
+  appsScript: {
+    enabled: true,
+    isSignupEnabled: true,
+  },
+
+  runtime: {
+    cacheService: {} as never,
+    propertiesService: {} as never,
+    session: {} as never,
+    utilities: {} as never,
+  },
+
+  repository,
+
+  session: {
+    storageType: "cache",
+  },
 });
 `,
   );
