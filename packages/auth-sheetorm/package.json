@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-sheetorm",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "SheetORM repository adapter for @gasboost/auth.",
   "keywords": [
     "google-apps-script",
