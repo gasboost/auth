@@ -60,10 +60,104 @@ export type AuthSchema = {
   };
 };
 
-export class AuthSchemaConfig {
-  public readonly schema: AuthSchema;
+type Section<O, K extends PropertyKey> = K extends keyof O ? O[K] : undefined;
 
-  constructor(options: AuthSchemaOptions = { dbId: "" }) {
+type Fields<T> = [T] extends [null | undefined]
+  ? undefined
+  : "fields" extends keyof NonNullable<T>
+    ? NonNullable<T>["fields"]
+    : undefined;
+
+type PropertyOrDefault<T, K extends PropertyKey, Default extends string> = [
+  T,
+] extends [null | undefined]
+  ? Default
+  : K extends keyof NonNullable<T>
+    ? Exclude<NonNullable<T>[K], undefined> extends infer Value
+      ? [Value] extends [never]
+        ? Default
+        : Value extends string
+          ? Value
+          : Default
+      : Default
+    : Default;
+
+type ResolveAuthSchema<O extends AuthSchemaOptions> = {
+  dbId: O["dbId"];
+
+  user: {
+    modelName: PropertyOrDefault<Section<O, "user">, "modelName", "user">;
+    fields: {
+      id: PropertyOrDefault<Fields<Section<O, "user">>, "id", "id">;
+      name: PropertyOrDefault<Fields<Section<O, "user">>, "name", "name">;
+    };
+  };
+
+  account: {
+    modelName: PropertyOrDefault<Section<O, "account">, "modelName", "account">;
+    fields: {
+      id: PropertyOrDefault<Fields<Section<O, "account">>, "id", "id">;
+      userId: PropertyOrDefault<
+        Fields<Section<O, "account">>,
+        "userId",
+        "userId"
+      >;
+      provider: PropertyOrDefault<
+        Fields<Section<O, "account">>,
+        "provider",
+        "provider"
+      >;
+      providerAccountId: PropertyOrDefault<
+        Fields<Section<O, "account">>,
+        "providerAccountId",
+        "providerAccountId"
+      >;
+      passwordHash: PropertyOrDefault<
+        Fields<Section<O, "account">>,
+        "passwordHash",
+        "passwordHash"
+      >;
+    };
+  };
+
+  passwordReset: {
+    modelName: PropertyOrDefault<
+      Section<O, "passwordReset">,
+      "modelName",
+      "passwordReset"
+    >;
+    fields: {
+      id: PropertyOrDefault<Fields<Section<O, "passwordReset">>, "id", "id">;
+      accountId: PropertyOrDefault<
+        Fields<Section<O, "passwordReset">>,
+        "accountId",
+        "accountId"
+      >;
+      tokenHash: PropertyOrDefault<
+        Fields<Section<O, "passwordReset">>,
+        "tokenHash",
+        "tokenHash"
+      >;
+      expiresAt: PropertyOrDefault<
+        Fields<Section<O, "passwordReset">>,
+        "expiresAt",
+        "expiresAt"
+      >;
+      enabled: PropertyOrDefault<
+        Fields<Section<O, "passwordReset">>,
+        "enabled",
+        "enabled"
+      >;
+    };
+  };
+};
+
+export class AuthSchemaConfig<
+  const O extends AuthSchemaOptions = { dbId: "" },
+> {
+  public readonly schema: ResolveAuthSchema<O>;
+
+  constructor(options: O = { dbId: "" } as O) {
     this.schema = {
       dbId: options.dbId,
 
@@ -97,6 +191,6 @@ export class AuthSchemaConfig {
           enabled: options.passwordReset?.fields?.enabled ?? "enabled",
         },
       },
-    };
+    } as ResolveAuthSchema<O>;
   }
 }
