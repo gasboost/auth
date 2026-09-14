@@ -101,6 +101,8 @@ try {
     throw new Error('@gasboost/sheetorm peerDependency must be "^2.0.0"');
   }
 
+  const authTarballDependency = `file:${authTarball}`;
+
   writeFileSync(
     join(consumerDirectory, "package.json"),
     JSON.stringify(
@@ -108,9 +110,14 @@ try {
         name: "auth-sheetorm-pack-smoke",
         private: true,
         dependencies: {
-          "@gasboost/auth": `file:${authTarball}`,
+          "@gasboost/auth": authTarballDependency,
           "@gasboost/auth-sheetorm": `file:${authSheetOrmTarball}`,
           "@gasboost/sheetorm": "2.0.0",
+        },
+        pnpm: {
+          overrides: {
+            "@gasboost/auth": authTarballDependency,
+          },
         },
       },
       null,
