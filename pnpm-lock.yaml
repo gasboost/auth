@@ -80,18 +80,6 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
 
-  packages/auth-sheetorm/tests/consumer:
-    dependencies:
-      '@gasboost/auth':
-        specifier: workspace:*
-        version: link:../../../auth-core
-      '@gasboost/auth-sheetorm':
-        specifier: workspace:*
-        version: link:../..
-      '@gasboost/sheetorm':
-        specifier: ^2.0.0
-        version: 2.0.0
-
 packages:
 
   '@cacheable/memory@2.2.0':
