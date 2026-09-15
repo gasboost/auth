@@ -19,6 +19,7 @@ jobs:
 
     outputs:
       publish-auth: ${{ steps.versions.outputs.publish-auth }}
+      publish-auth-app: ${{ steps.versions.outputs.publish-auth-app }}
       publish-sheetorm: ${{ steps.versions.outputs.publish-sheetorm }}
       publish-realtime-firebase: ${{ steps.versions.outputs.publish-realtime-firebase }}
 
@@ -56,12 +57,13 @@ jobs:
           }
 
           check_package publish-auth packages/auth-core/package.json
+          check_package publish-auth-app packages/auth-app/package.json
           check_package publish-sheetorm packages/auth-sheetorm/package.json
           check_package publish-realtime-firebase packages/auth-realtime-firebase/package.json
 
   publish:
     needs: check-versions
-    if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' || needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
+    if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-auth-app == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' || needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -99,8 +101,20 @@ jobs:
         run: pnpm --filter @gasboost/auth test
 
       - name: Build auth
-        if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' || needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
+        if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-auth-app == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' || needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
         run: pnpm --filter @gasboost/auth build
+
+      - name: Typecheck auth-app
+        if: ${{ needs.check-versions.outputs.publish-auth-app == 'true' }}
+        run: pnpm --filter @gasboost/auth-app typecheck
+
+      - name: Test auth-app
+        if: ${{ needs.check-versions.outputs.publish-auth-app == 'true' }}
+        run: pnpm --filter @gasboost/auth-app test
+
+      - name: Build auth-app
+        if: ${{ needs.check-versions.outputs.publish-auth-app == 'true' }}
+        run: pnpm --filter @gasboost/auth-app build
 
       - name: Typecheck auth-sheetorm
         if: ${{ needs.check-versions.outputs.publish-sheetorm == 'true' }}
@@ -134,6 +148,16 @@ jobs:
       - name: Publish auth
         if: ${{ needs.check-versions.outputs.publish-auth == 'true' }}
         working-directory: packages/auth-core
+        run: pnpm publish --access public --no-git-checks
+
+      - name: Verify auth-app package contents
+        if: ${{ needs.check-versions.outputs.publish-auth-app == 'true' }}
+        working-directory: packages/auth-app
+        run: pnpm pack
+
+      - name: Publish auth-app
+        if: ${{ needs.check-versions.outputs.publish-auth-app == 'true' }}
+        working-directory: packages/auth-app
         run: pnpm publish --access public --no-git-checks
 
       - name: Verify auth-sheetorm package contents
