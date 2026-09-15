@@ -1,5 +1,7 @@
 import { type AuthSchema } from "@gasboost/auth";
-import { describe, expect, it } from "vitest";
+import { SheetTable } from "@gasboost/sheetorm";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import { z } from "zod";
 
 import { createAuthSchema } from "../src/createAuthSchema";
 
@@ -181,5 +183,237 @@ describe("createAuthSchema", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("default field nameの具体型を保持する", () => {
+    const schema = {
+      dbId: "spreadsheet-id",
+
+      user: {
+        modelName: "user",
+        fields: {
+          id: "id",
+          name: "name",
+        },
+      },
+
+      account: {
+        modelName: "account",
+        fields: {
+          id: "id",
+          userId: "userId",
+          provider: "provider",
+          providerAccountId: "providerAccountId",
+          passwordHash: "passwordHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
+        },
+      },
+    } as const satisfies AuthSchema;
+
+    const [userTable, accountTable, passwordResetTable] =
+      createAuthSchema(schema);
+
+    type User = z.output<typeof userTable.schema>;
+    type Account = z.output<typeof accountTable.schema>;
+    type PasswordReset = z.output<typeof passwordResetTable.schema>;
+
+    expectTypeOf<User>().toEqualTypeOf<{
+      id: string;
+      name: string;
+    }>();
+
+    expectTypeOf<Account>().toEqualTypeOf<{
+      id: string;
+      userId: string;
+      provider: "emailPassword" | "appsScript";
+      providerAccountId: string;
+      passwordHash: string | null;
+    }>();
+
+    expectTypeOf<PasswordReset>().toEqualTypeOf<{
+      id: string;
+      accountId: string;
+      tokenHash: string;
+      expiresAt: Date;
+      enabled: boolean;
+    }>();
+  });
+
+  it("custom modelNameとfieldNameの具体型を保持する", () => {
+    const schema = {
+      dbId: "spreadsheet-id",
+
+      user: {
+        modelName: "members",
+        fields: {
+          id: "memberId",
+          name: "displayName",
+        },
+      },
+
+      account: {
+        modelName: "authAccounts",
+        fields: {
+          id: "authAccountId",
+          userId: "memberId",
+          provider: "authProvider",
+          providerAccountId: "externalAccountId",
+          passwordHash: "credentialHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "resetRequests",
+        fields: {
+          id: "resetId",
+          accountId: "authAccountId",
+          tokenHash: "resetTokenHash",
+          expiresAt: "expiresOn",
+          enabled: "isEnabled",
+        },
+      },
+    } as const satisfies AuthSchema;
+
+    const [userTable, accountTable, passwordResetTable] =
+      createAuthSchema(schema);
+
+    expectTypeOf(userTable.name).toEqualTypeOf<"members">();
+    expectTypeOf(accountTable.name).toEqualTypeOf<"authAccounts">();
+    expectTypeOf(passwordResetTable.name).toEqualTypeOf<"resetRequests">();
+
+    type User = z.output<typeof userTable.schema>;
+    type Account = z.output<typeof accountTable.schema>;
+    type PasswordReset = z.output<typeof passwordResetTable.schema>;
+
+    expectTypeOf<User>().toEqualTypeOf<{
+      memberId: string;
+      displayName: string;
+    }>();
+
+    expectTypeOf<Account>().toEqualTypeOf<{
+      authAccountId: string;
+      memberId: string;
+      authProvider: "emailPassword" | "appsScript";
+      externalAccountId: string;
+      credentialHash: string | null;
+    }>();
+
+    expectTypeOf<PasswordReset>().toEqualTypeOf<{
+      resetId: string;
+      authAccountId: string;
+      resetTokenHash: string;
+      expiresOn: Date;
+      isEnabled: boolean;
+    }>();
+  });
+
+  it("application tableと同じtupleに混在しても具体型を保持する", () => {
+    const authSchema = {
+      dbId: "spreadsheet-id",
+
+      user: {
+        modelName: "user",
+        fields: {
+          id: "id",
+          name: "name",
+        },
+      },
+
+      account: {
+        modelName: "account",
+        fields: {
+          id: "id",
+          userId: "userId",
+          provider: "provider",
+          providerAccountId: "providerAccountId",
+          passwordHash: "passwordHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
+        },
+      },
+    } as const satisfies AuthSchema;
+
+    const authTables = createAuthSchema(authSchema);
+
+    const tutorialSchema = z.object({
+      id: z.string(),
+      userId: z.string(),
+      task: z.string(),
+      completed: z.boolean(),
+      completedAt: z.date().optional(),
+    });
+
+    const tutorialTable = new SheetTable({
+      dbId: "spreadsheet-id",
+      name: "tutorial",
+      schema: tutorialSchema,
+      primaryKey: "id",
+    });
+
+    const tables = [...authTables, tutorialTable] as const;
+
+    type UserTable = Extract<(typeof tables)[number], { name: "user" }>;
+
+    type AccountTable = Extract<(typeof tables)[number], { name: "account" }>;
+
+    type PasswordResetTable = Extract<
+      (typeof tables)[number],
+      { name: "passwordReset" }
+    >;
+
+    type TutorialTable = Extract<(typeof tables)[number], { name: "tutorial" }>;
+
+    type User = z.output<UserTable["schema"]>;
+    type Account = z.output<AccountTable["schema"]>;
+    type PasswordReset = z.output<PasswordResetTable["schema"]>;
+    type Tutorial = z.output<TutorialTable["schema"]>;
+
+    expectTypeOf<User>().toEqualTypeOf<{
+      id: string;
+      name: string;
+    }>();
+
+    expectTypeOf<Account>().toEqualTypeOf<{
+      id: string;
+      userId: string;
+      provider: "emailPassword" | "appsScript";
+      providerAccountId: string;
+      passwordHash: string | null;
+    }>();
+
+    expectTypeOf<PasswordReset>().toEqualTypeOf<{
+      id: string;
+      accountId: string;
+      tokenHash: string;
+      expiresAt: Date;
+      enabled: boolean;
+    }>();
+
+    expectTypeOf<Tutorial>().toEqualTypeOf<{
+      id: string;
+      userId: string;
+      task: string;
+      completed: boolean;
+      completedAt?: Date;
+    }>();
   });
 });
