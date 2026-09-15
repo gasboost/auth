@@ -2,10 +2,12 @@ import type { AppType } from "../backend/passwordreset-disabled";
 
 type Client<T> = {
   [K in keyof T]: T[K] extends {
-    args: infer TArgs extends unknown[];
+    input: infer TInput;
     result: infer TResult;
   }
-    ? (...args: TArgs) => Promise<TResult>
+    ? TInput extends undefined
+      ? () => Promise<TResult>
+      : (input: TInput) => Promise<TResult>
     : never;
 };
 
@@ -28,9 +30,13 @@ client.signUpAppsScript({
   name: "User",
 });
 
-client.getSession("session-id");
+client.getSession({
+  sessionId: "session-id",
+});
 
-client.signOut("session-id");
+client.signOut({
+  sessionId: "session-id",
+});
 
 // @ts-expect-error password reset is disabled
 client.forgotPassword({

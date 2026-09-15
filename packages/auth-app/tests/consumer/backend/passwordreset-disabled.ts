@@ -1,6 +1,7 @@
 import { AppsScript, type InferAppsScript } from "@gasboost/app";
-import { AppsScriptAuth } from "../../../src/AppsScriptAuth";
-import type { AppsScriptAuthRepository } from "../../../src/storage/AppsScriptAuthRepository";
+import type { AppsScriptAuthRepository } from "@gasboost/auth";
+import { AppsScriptAuth } from "@gasboost/auth";
+import { handlers } from "../../../src/handlers";
 
 declare const repository: AppsScriptAuthRepository;
 declare const runtime: ConstructorParameters<
@@ -15,7 +16,7 @@ const auth = new AppsScriptAuth({
   },
 });
 
-export const app = new AppsScript().calls(auth.handlers);
+export const app = new AppsScript().calls(handlers(auth));
 
 export type AppType = InferAppsScript<typeof app>;
 

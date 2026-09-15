@@ -526,60 +526,6 @@ const pepper =
   PropertiesService.getScriptProperties().getProperty("AUTH_PEPPER");
 ```
 
-## `@gasboost/app` との連携
-
-`AppsScriptAuth` は、RPC 登録用の handler collection を `auth.handlers` として公開します。
-
-`@gasboost/app` の `.calls()` にそのまま渡すことで、認証用 RPC を一括登録できます。
-
-```ts
-import { AppsScript } from "@gasboost/app";
-import { AppsScriptAuth } from "@gasboost/auth";
-
-const auth = new AppsScriptAuth({
-  repository,
-  runtime,
-  session: {
-    storageType: "cache",
-  },
-  emailPassword: {
-    enabled: true,
-    pepper: "your-secret-pepper",
-  },
-  appsScript: {
-    enabled: true,
-  },
-});
-
-const app = new AppsScript().calls(auth.handlers);
-
-export default app;
-```
-
-以下の RPC が登録されます。
-
-- `signInEmail`
-- `signInAppsScript`
-- `signUpEmail`
-- `signUpAppsScript`
-- `getSession`
-- `signOut`
-
-`InferAppsScript` を利用するクライアントでは、これらの RPC がそのまま型推論されます。
-
-```ts
-client.signInEmail({
-  email: "user@example.com",
-  password: "password",
-});
-
-client.getSession("session-id");
-
-client.signOut("session-id");
-```
-
-RPC endpoint 名は `@gasboost/auth` 側で管理されるため、利用側で個別に `.call()` を記述したり、endpoint 名を重複定義したりする必要はありません。
-
 ## Testing
 
 GAS API を利用するテストでは `gasboost/fake` を使用できます。

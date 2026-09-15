@@ -32,8 +32,8 @@ describe("authentication", () => {
 
     app.use(authentication(auth));
 
-    app.call("getProfile", (input: AuthenticatedInput) => {
-      const currentSession: AuthSession | undefined = app.state.get("session");
+    app.call("getProfile", (input: AuthenticatedInput, c) => {
+      const currentSession: AuthSession | undefined = c.state.get("session");
 
       return {
         token: input.token,

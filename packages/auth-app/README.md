@@ -88,7 +88,7 @@ session storage や repository を middleware 側で再定義する必要はあ�
 ```ts
 import { AppsScript } from "@gasboost/app";
 import { AppsScriptAuth } from "@gasboost/auth";
-import { authentication, type AuthState } from "@gasboost/auth-app";
+import { authentication } from "@gasboost/auth-app";
 
 const auth = new AppsScriptAuth({
   repository,
@@ -105,7 +105,7 @@ const auth = new AppsScriptAuth({
   },
 });
 
-const app = new AppsScript<AuthState>().use(authentication(auth));
+const app = new AppsScript().use(authentication(auth));
 ```
 
 `authentication()` は `AppsScriptAuth` の既存 session API を利用します。
@@ -114,7 +114,64 @@ const app = new AppsScript<AuthState>().use(authentication(auth));
 const session = await auth.session.get(token);
 ```
 
-session の取得だけを目的とした別の authentication API は使用しません。
+有効な session が取得できた場合、middleware はその session を `AppsScript` state に設定します。
+
+`@gasboost/app` v4 では `authentication()` の適用後、後続 handler の `context.state` から session が non-nullable として取得できます。
+
+## Auth handlers
+
+`handlers(auth)` は `AppsScriptAuth` の公開 API を `@gasboost/app` の RPC handler として登録できる形へ変換します。
+
+```ts
+import { AppsScript } from "@gasboost/app";
+import { AppsScriptAuth } from "@gasboost/auth";
+import { authentication, handlers } from "@gasboost/auth-app";
+
+const auth = new AppsScriptAuth({
+  repository,
+  runtime,
+  session: {
+    storageType: "cache",
+  },
+});
+
+const app = new AppsScript().use(authentication(auth)).calls(handlers(auth));
+```
+
+以下の RPC が公開されます。
+
+- `signInEmail`
+- `signInAppsScript`
+- `signUpEmail`
+- `signUpAppsScript`
+- `getSession`
+- `signOut`
+
+Password Reset が有効な場合は、さらに以下も公開されます。
+
+- `forgotPassword`
+- `resetPassword`
+
+`signIn` / `signUp` / Password Reset の input と result の型は `@gasboost/auth` の既存 API から推論されます。
+
+`getSession` と `signOut` は、RPC の単一 object input contract に合わせて以下の形式になります。
+
+```ts
+client.getSession({
+  sessionId: "session-id",
+});
+
+client.signOut({
+  sessionId: "session-id",
+});
+```
+
+`@gasboost/auth` 側の API 自体は変更されません。
+
+```ts
+await auth.session.get("session-id");
+await auth.signOut.execute("session-id");
+```
 
 ## Authenticated RPC
 
@@ -122,24 +179,18 @@ session の取得だけを目的とした別の authentication API は使用し�
 
 ```ts
 import { AppsScript } from "@gasboost/app";
-import {
-  authentication,
-  type AuthenticatedInput,
-  type AuthState,
-} from "@gasboost/auth-app";
+import { authentication, type AuthenticatedInput } from "@gasboost/auth-app";
 
-const app = new AppsScript<AuthState>()
+const app = new AppsScript()
   .use(authentication(auth))
-  .call("getProfile", (_input: AuthenticatedInput) => {
-    const session = app.state.get("session");
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
+  .call("getProfile", (_input: AuthenticatedInput, context) => {
+    const session = context.state.get("session");
 
     return getProfile(session.userId);
   });
 ```
+
+`authentication(auth)` の通過後は session が state に存在することが型として保証されるため、`undefined` check は不要です。
 
 クライアント側では token が必須になります。
 
@@ -149,23 +200,18 @@ client.getProfile({
 });
 ```
 
-token を渡さない呼び出しは RPC contract 上エラーになります。
-
 追加 input が必要な場合:
 
 ```ts
-const app = new AppsScript<AuthState>().use(authentication(auth)).call(
+const app = new AppsScript().use(authentication(auth)).call(
   "updateProfile",
   (
     input: AuthenticatedInput<{
       name: string;
     }>,
+    context,
   ) => {
-    const session = app.state.get("session");
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
+    const session = context.state.get("session");
 
     return updateProfile({
       userId: session.userId,
@@ -191,7 +237,7 @@ middleware はすべての RPC に認証を要求するわけではありませ�
 token を持たない RPC input はそのまま後続 handler へ流れます。
 
 ```ts
-const app = new AppsScript<AuthState>()
+const app = new AppsScript()
   .use(authentication(auth))
   .call("signIn", (input: { email: string; password: string }) => {
     return auth.signIn.email(input);
@@ -210,13 +256,11 @@ client.signIn({
 input 自体を持たない公開 RPC も利用できます。
 
 ```ts
-const app = new AppsScript<AuthState>()
-  .use(authentication(auth))
-  .call("health", () => {
-    return {
-      ok: true,
-    };
-  });
+const app = new AppsScript().use(authentication(auth)).call("health", () => {
+  return {
+    ok: true,
+  };
+});
 ```
 
 ## Session state
@@ -227,31 +271,36 @@ const app = new AppsScript<AuthState>()
 context.state.set("session", session);
 ```
 
-application handler からは次のように取得できます。
+`authentication(auth)` より後の application handler では、`context.state` から取得できます。
 
 ```ts
-const session = app.state.get("session");
+const app = new AppsScript()
+  .use(authentication(auth))
+  .call("getProfile", (_input: AuthenticatedInput, context) => {
+    const session = context.state.get("session");
 
-if (!session) {
-  throw new Error("Unauthorized");
-}
+    session.id;
+    session.userId;
+    session.createdAt;
+    session.expiresAt;
 
-session.id;
-session.userId;
-session.createdAt;
-session.expiresAt;
+    return getProfile(session.userId);
+  });
 ```
+
+`authentication(auth)` が session state を保証するため、後続 handler では `session` は `undefined` になりません。
 
 application user が必要な場合は `session.userId` を利用して application 側で取得します。
 
 ```ts
-const session = app.state.get("session");
+const app = new AppsScript()
+  .use(authentication(auth))
+  .call("getProfile", async (_input: AuthenticatedInput, context) => {
+    const session = context.state.get("session");
+    const user = await userRepository.find(session.userId);
 
-if (!session) {
-  throw new Error("Unauthorized");
-}
-
-const user = await userRepository.find(session.userId);
+    return user;
+  });
 ```
 
 `@gasboost/auth-app` は application User の取得までは担当しません。
@@ -298,17 +347,27 @@ Apps Script Active User を application session の代替として扱いませ�
 
 ## Custom state
 
-application 独自の state と組み合わせる場合は `AuthState` と intersection できます。
+## Custom state
+
+`@gasboost/app` v4 では middleware が追加する state は `.use()` によって型へ反映されます。
 
 ```ts
-import { authentication, type AuthState } from "@gasboost/auth-app";
-
-type AppState = AuthState & {
-  requestId: string;
-};
-
-const app = new AppsScript<AppState>().use(authentication(auth));
+const app = new AppsScript().use(authentication(auth));
 ```
+
+`authentication(auth)` より後の handler では session state が保証されます。
+
+```ts
+const app = new AppsScript()
+  .use(authentication(auth))
+  .call("getProfile", (_input: AuthenticatedInput, context) => {
+    const session = context.state.get("session");
+
+    return getProfile(session.userId);
+  });
+```
+
+application 独自の state を追加する場合も、対応する middleware を `.use()` で組み合わせます。
 
 ## Responsibility
 
