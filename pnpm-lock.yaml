@@ -33,8 +33,8 @@ importers:
   packages/auth-app:
     devDependencies:
       '@gasboost/app':
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: ^5.0.0
+        version: 5.0.0
       '@gasboost/auth':
         specifier: workspace:*
         version: link:../auth-core
@@ -136,8 +136,8 @@ packages:
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@gasboost/app@4.0.0':
-    resolution: {integrity: sha512-Pg5lQncl/bfQRbKXEAJWs5mrglhzPq/6agXqIK9nofyEAN6q4rAUsQfgarBo394z3jQK8BufzHg//MFBAKOLtQ==}
+  '@gasboost/app@5.0.0':
+    resolution: {integrity: sha512-EyZvzn3t7t71X4ZotSh5D7fyEawnYWCwDNlrnUbloOBzWhfKvOPz5cx59G/vJax8EyIRS2t9VNcf31X010Tpkw==}
 
   '@gasboost/fake-core@0.1.2':
     resolution: {integrity: sha512-FYicRmQK21hyUV31S1Ed6/GFtReL8Vv96rc3tQhJk3vQ5G+Y31GfCnX78CxuhyS45Gg+tOnkGLzByvK5EP38aQ==}
@@ -1088,7 +1088,7 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@gasboost/app@4.0.0': {}
+  '@gasboost/app@5.0.0': {}
 
   '@gasboost/fake-core@0.1.2': {}
 
