@@ -44,7 +44,25 @@ type PasswordResetShape<
       : z.ZodString;
 };
 
+function ensureUniqueFieldNames(
+  modelName: string,
+  fields: Record<string, string>,
+): void {
+  const fieldNames = Object.values(fields);
+
+  if (new Set(fieldNames).size !== fieldNames.length) {
+    throw new Error(`Field names for '${modelName}' must be unique.`);
+  }
+}
+
 export function createAuthSchema<const S extends AuthSchema>(schema: S) {
+  ensureUniqueFieldNames(schema.user.modelName, schema.user.fields);
+  ensureUniqueFieldNames(schema.account.modelName, schema.account.fields);
+  ensureUniqueFieldNames(
+    schema.passwordReset.modelName,
+    schema.passwordReset.fields,
+  );
+
   const userShape = {
     [schema.user.fields.id]: z.string(),
     [schema.user.fields.name]: z.string(),

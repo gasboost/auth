@@ -419,4 +419,124 @@ describe("createAuthSchema", () => {
       completedAt?: Date;
     }>();
   });
+
+  it("user内でfieldNameが重複している場合は拒否する", () => {
+    const schema = {
+      dbId: "spreadsheet-id",
+
+      user: {
+        modelName: "user",
+        fields: {
+          id: "identity",
+          name: "identity",
+        },
+      },
+
+      account: {
+        modelName: "account",
+        fields: {
+          id: "id",
+          userId: "userId",
+          provider: "provider",
+          providerAccountId: "providerAccountId",
+          passwordHash: "passwordHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
+        },
+      },
+    } as const satisfies AuthSchema;
+
+    expect(() => createAuthSchema(schema)).toThrow(
+      "Field names for 'user' must be unique.",
+    );
+  });
+
+  it("account内でfieldNameが重複している場合は拒否する", () => {
+    const schema = {
+      dbId: "spreadsheet-id",
+
+      user: {
+        modelName: "user",
+        fields: {
+          id: "id",
+          name: "name",
+        },
+      },
+
+      account: {
+        modelName: "account",
+        fields: {
+          id: "id",
+          userId: "userId",
+          provider: "credential",
+          providerAccountId: "providerAccountId",
+          passwordHash: "credential",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
+        },
+      },
+    } as const satisfies AuthSchema;
+
+    expect(() => createAuthSchema(schema)).toThrow(
+      "Field names for 'account' must be unique.",
+    );
+  });
+
+  it("passwordReset内でfieldNameが重複している場合は拒否する", () => {
+    const schema = {
+      dbId: "spreadsheet-id",
+
+      user: {
+        modelName: "user",
+        fields: {
+          id: "id",
+          name: "name",
+        },
+      },
+
+      account: {
+        modelName: "account",
+        fields: {
+          id: "id",
+          userId: "userId",
+          provider: "provider",
+          providerAccountId: "providerAccountId",
+          passwordHash: "passwordHash",
+        },
+      },
+
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "state",
+          enabled: "state",
+        },
+      },
+    } as const satisfies AuthSchema;
+
+    expect(() => createAuthSchema(schema)).toThrow(
+      "Field names for 'passwordReset' must be unique.",
+    );
+  });
 });
