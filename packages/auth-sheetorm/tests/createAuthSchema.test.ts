@@ -220,12 +220,12 @@ describe("createAuthSchema", () => {
       },
     } as const satisfies AuthSchema;
 
-    const [userTable, accountTable, passwordResetTable] =
+    const [_userTable, _accountTable, _passwordResetTable] =
       createAuthSchema(schema);
 
-    type User = z.output<typeof userTable.schema>;
-    type Account = z.output<typeof accountTable.schema>;
-    type PasswordReset = z.output<typeof passwordResetTable.schema>;
+    type User = z.output<typeof _userTable.schema>;
+    type Account = z.output<typeof _accountTable.schema>;
+    type PasswordReset = z.output<typeof _passwordResetTable.schema>;
 
     expectTypeOf<User>().toEqualTypeOf<{
       id: string;
@@ -369,18 +369,21 @@ describe("createAuthSchema", () => {
       primaryKey: "id",
     });
 
-    const tables = [...authTables, tutorialTable] as const;
+    const _tables = [...authTables, tutorialTable] as const;
 
-    type UserTable = Extract<(typeof tables)[number], { name: "user" }>;
+    type UserTable = Extract<(typeof _tables)[number], { name: "user" }>;
 
-    type AccountTable = Extract<(typeof tables)[number], { name: "account" }>;
+    type AccountTable = Extract<(typeof _tables)[number], { name: "account" }>;
 
     type PasswordResetTable = Extract<
-      (typeof tables)[number],
+      (typeof _tables)[number],
       { name: "passwordReset" }
     >;
 
-    type TutorialTable = Extract<(typeof tables)[number], { name: "tutorial" }>;
+    type TutorialTable = Extract<
+      (typeof _tables)[number],
+      { name: "tutorial" }
+    >;
 
     type User = z.output<UserTable["schema"]>;
     type Account = z.output<AccountTable["schema"]>;
