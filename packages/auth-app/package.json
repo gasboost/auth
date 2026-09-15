@@ -38,11 +38,11 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@gasboost/app": "^4.0.0",
-    "@gasboost/auth": "^0.2.0"
+    "@gasboost/app": "^5.0.0",
+    "@gasboost/auth": "^0.3.0"
   },
   "devDependencies": {
-    "@gasboost/app": "^4.0.0",
+    "@gasboost/app": "^5.0.0",
     "@gasboost/auth": "workspace:*",
     "@types/google-apps-script": "^2.0.13"
   },

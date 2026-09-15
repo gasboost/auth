@@ -359,6 +359,10 @@ const app = new AppsScript().use(authentication(auth));
 
 ```ts
 const app = new AppsScript()
+  .calls(handlers(auth))
+  .call("health", () => ({
+    ok: true,
+  }))
   .use(authentication(auth))
   .call("getProfile", (_input: AuthenticatedInput, context) => {
     const session = context.state.get("session");
