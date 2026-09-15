@@ -3,7 +3,7 @@ import { describe, expectTypeOf, it } from "vitest";
 
 import type { AuthenticatedInput } from "../src/AuthenticatedInput";
 
-const app = new AppsScript()
+const _app = new AppsScript()
   .call("getProfile", (_input: AuthenticatedInput) => {
     return {
       id: "user-1",
@@ -27,7 +27,7 @@ const app = new AppsScript()
     };
   });
 
-type AppType = InferAppsScript<typeof app>;
+type AppType = InferAppsScript<typeof _app>;
 
 describe("AuthenticatedInput", () => {
   it("tokenのみを必須にできる", () => {
