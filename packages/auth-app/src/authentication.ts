@@ -5,7 +5,7 @@ import type { AuthState } from "./AuthState";
 
 export function authentication(
   auth: Pick<AppsScriptAuth, "session">,
-): AppsScriptMiddleware<AuthState> {
+): AppsScriptMiddleware<Record<never, never>, AuthState> {
   return async (context, next) => {
     if (context.invocation.type !== "call") {
       return next();
@@ -13,17 +13,16 @@ export function authentication(
 
     const input = context.invocation.input;
 
-    if (typeof input !== "object" || input === null || !("token" in input)) {
-      return next();
-    }
-
-    const token = input.token;
-
-    if (typeof token !== "string") {
+    if (
+      typeof input !== "object" ||
+      input === null ||
+      !("token" in input) ||
+      typeof input.token !== "string"
+    ) {
       throw new Error("Unauthorized");
     }
 
-    const session = await auth.session.get(token);
+    const session = await auth.session.get(input.token);
 
     if (session === null) {
       throw new Error("Unauthorized");

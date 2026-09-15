@@ -2,10 +2,12 @@ import type { AppType } from "../backend/passwordreset-enabled";
 
 type Client<T> = {
   [K in keyof T]: T[K] extends {
-    args: infer TArgs extends unknown[];
+    input: infer TInput;
     result: infer TResult;
   }
-    ? (...args: TArgs) => Promise<TResult>
+    ? TInput extends undefined
+      ? () => Promise<TResult>
+      : (input: TInput) => Promise<TResult>
     : never;
 };
 
@@ -16,8 +18,12 @@ client.signInEmail({
   password: "password",
 });
 
-client.getSession("session-id");
-client.signOut("session-id");
+client.getSession({
+  sessionId: "session-id",
+});
+client.signOut({
+  sessionId: "session-id",
+});
 
 client.forgotPassword({
   email: "user@example.com",

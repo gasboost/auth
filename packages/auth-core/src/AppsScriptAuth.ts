@@ -40,26 +40,11 @@ type AppsScriptAuthConfig<
   hooks?: AuthHooks<THookResult>;
 };
 
-type BaseHandlers<THookResult> = {
-  signInEmail: AppsScriptAuthSignIn<THookResult>["email"];
-  signInAppsScript: AppsScriptAuthSignIn<THookResult>["appsScript"];
-  signUpEmail: AppsScriptAuthSignUp["email"];
-  signUpAppsScript: AppsScriptAuthSignUp["appsScript"];
-  getSession: AppsScriptAuthSession["get"];
-  signOut: AppsScriptAuthSignOut["execute"];
-};
-
-type PasswordHandlers = {
-  forgotPassword: AppsScriptAuthPassword["forgot"];
-  resetPassword: AppsScriptAuthPassword["reset"];
-};
-
-type AppsScriptAuthHandlers<TEmailPassword, THookResult> =
-  TEmailPassword extends {
-    passwordReset: unknown;
-  }
-    ? BaseHandlers<THookResult> & PasswordHandlers
-    : BaseHandlers<THookResult>;
+type AppsScriptAuthPasswordApi<TEmailPassword> = TEmailPassword extends {
+  passwordReset: unknown;
+}
+  ? AppsScriptAuthPassword
+  : undefined;
 
 export class AppsScriptAuth<
   TEmailPassword extends EmailPasswordAuthOptions | undefined = undefined,
@@ -68,9 +53,12 @@ export class AppsScriptAuth<
   public readonly signIn: AppsScriptAuthSignIn<THookResult>;
 
   public readonly signUp: AppsScriptAuthSignUp;
+
   public readonly session: AppsScriptAuthSession;
+
   public readonly signOut: AppsScriptAuthSignOut;
-  public readonly password: AppsScriptAuthPassword | undefined;
+
+  public readonly password: AppsScriptAuthPasswordApi<TEmailPassword>;
 
   constructor({
     repository,
@@ -126,34 +114,14 @@ export class AppsScriptAuth<
 
     this.signOut = new AppsScriptAuthSignOut(sessionStorage);
 
-    if (emailPasswordConfig?.passwordReset) {
-      this.password = new AppsScriptAuthPassword({
-        repository,
-        utilities: runtime.utilities,
-        emailPassword: emailPasswordConfig,
-      });
-    } else {
-      this.password = undefined;
-    }
-  }
-
-  public get handlers(): AppsScriptAuthHandlers<TEmailPassword, THookResult> {
-    const handlers = {
-      signInEmail: this.signIn.email,
-      signInAppsScript: this.signIn.appsScript,
-      signUpEmail: this.signUp.email,
-      signUpAppsScript: this.signUp.appsScript,
-      getSession: this.session.get.bind(this.session),
-      signOut: this.signOut.execute.bind(this.signOut),
-
-      ...(this.password
-        ? {
-            forgotPassword: this.password.forgot.bind(this.password),
-            resetPassword: this.password.reset.bind(this.password),
-          }
-        : {}),
-    };
-
-    return handlers as AppsScriptAuthHandlers<TEmailPassword, THookResult>;
+    this.password = (
+      emailPasswordConfig?.passwordReset
+        ? new AppsScriptAuthPassword({
+            repository,
+            utilities: runtime.utilities,
+            emailPassword: emailPasswordConfig,
+          })
+        : undefined
+    ) as AppsScriptAuthPasswordApi<TEmailPassword>;
   }
 }

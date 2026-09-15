@@ -1,6 +1,6 @@
-import { AppsScriptAuth } from "../../src/AppsScriptAuth";
-import type { EmailPasswordAuthOptions } from "../../src/authentication/EmailPasswordAuthentication";
-import type { AppsScriptAuthRepository } from "../../src/storage/AppsScriptAuthRepository";
+import { AppsScriptAuth } from "../../../auth-core/src/AppsScriptAuth";
+import type { EmailPasswordAuthOptions } from "../../../auth-core/src/authentication/EmailPasswordAuthentication";
+import type { AppsScriptAuthRepository } from "../../../auth-core/src/storage/AppsScriptAuthRepository";
 
 declare const repository: AppsScriptAuthRepository;
 declare const utilities: GoogleAppsScript.Utilities.Utilities;
