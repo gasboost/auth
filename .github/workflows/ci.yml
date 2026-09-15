@@ -52,6 +52,19 @@ jobs:
       - name: Build auth-core
         run: pnpm --filter @gasboost/auth build
 
+      - name: Typecheck auth-app
+        run: pnpm --filter @gasboost/auth-app typecheck
+
+      - name: Test auth-app
+        run: pnpm --filter @gasboost/auth-app test
+
+      - name: Build auth-app
+        run: pnpm --filter @gasboost/auth-app build
+
+      - name: Pack auth-app
+        working-directory: packages/auth-app
+        run: pnpm pack
+
       - name: Typecheck auth-sheetorm
         run: pnpm --filter @gasboost/auth-sheetorm typecheck
 

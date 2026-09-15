@@ -30,6 +30,18 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@26.5.1)(vite@8.2.2(@types/node@26.5.1))
 
+  packages/auth-app:
+    devDependencies:
+      '@gasboost/app':
+        specifier: ^3.0.0
+        version: 3.0.0
+      '@gasboost/auth':
+        specifier: workspace:*
+        version: link:../auth-core
+      '@types/google-apps-script':
+        specifier: ^2.0.13
+        version: 2.0.13
+
   packages/auth-core:
     devDependencies:
       '@gasboost/app':
@@ -129,6 +141,9 @@ packages:
 
   '@gasboost/app@1.3.0':
     resolution: {integrity: sha512-pMMvZQlnfxPkuC8+l4t5FFEDFRQmLo7LvU1pVSq+DEbTsrElXd9UytOk/vNyic+7s2ro0lQnODDjWS5u3KSi7A==}
+
+  '@gasboost/app@3.0.0':
+    resolution: {integrity: sha512-GYUPk/Ud1ejNGgTtlMoPDu0kCW2v1vdDyq0AEsLDCpfGqnSMd0fMBW/tjBsXMmWm1ERrNoKVUAEvBUXWPbevLw==}
 
   '@gasboost/fake-core@0.1.2':
     resolution: {integrity: sha512-FYicRmQK21hyUV31S1Ed6/GFtReL8Vv96rc3tQhJk3vQ5G+Y31GfCnX78CxuhyS45Gg+tOnkGLzByvK5EP38aQ==}
@@ -1080,6 +1095,8 @@ snapshots:
       levn: 0.4.1
 
   '@gasboost/app@1.3.0': {}
+
+  '@gasboost/app@3.0.0': {}
 
   '@gasboost/fake-core@0.1.2': {}
 

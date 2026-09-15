@@ -1,0 +1,57 @@
+{
+  "name": "@gasboost/auth-app",
+  "version": "0.1.0",
+  "description": "Authentication middleware adapter for @gasboost/auth and @gasboost/app.",
+  "keywords": [
+    "google-apps-script",
+    "gas",
+    "authentication",
+    "auth",
+    "middleware",
+    "rpc",
+    "typescript",
+    "gasboost"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gasboost/auth.git",
+    "directory": "packages/auth-app"
+  },
+  "bugs": {
+    "url": "https://github.com/gasboost/auth/issues"
+  },
+  "homepage": "https://github.com/gasboost/auth#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@gasboost/app": "^3.0.0",
+    "@gasboost/auth": "^0.2.0"
+  },
+  "devDependencies": {
+    "@gasboost/app": "^3.0.0",
+    "@gasboost/auth": "workspace:*",
+    "@types/google-apps-script": "^2.0.13"
+  },
+  "scripts": {
+    "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "format:fix": "prettier --write . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "lint": "eslint . --config ../../eslint.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
+  }
+}
