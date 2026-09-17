@@ -173,6 +173,14 @@ try {
           "@gasboost/sheetorm": "^3.1.0",
           typescript: "^7.0.0-dev.20260901",
         },
+        pnpm: {
+          overrides: Object.fromEntries(
+            packages.map((packageMetadata) => [
+              packageMetadata.name,
+              `file:${tarballs.get(packageMetadata.name)}`,
+            ]),
+          ),
+        },
       },
       null,
       2,
