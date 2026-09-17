@@ -77,37 +77,12 @@ export const db = new SheetDB({
 Repository は構築済みの `SheetDB` を唯一のテーブル所有者として利用します。初期化時に `tables` を重ねて渡す必要はありません。
 
 ```ts
-import type { AuthSchema } from "@gasboost/auth";
 import { SheetOrmAuthRepository } from "@gasboost/auth-sheetorm";
 
-const schema = {
-  user: {
-    modelName: "user",
-    fields: { id: "id", name: "name" },
-  },
-  account: {
-    modelName: "account",
-    fields: {
-      id: "id",
-      userId: "userId",
-      provider: "provider",
-      providerAccountId: "providerAccountId",
-      passwordHash: "passwordHash",
-    },
-  },
-  passwordReset: {
-    modelName: "passwordReset",
-    fields: {
-      id: "id",
-      accountId: "accountId",
-      tokenHash: "tokenHash",
-      expiresAt: "expiresAt",
-      enabled: "enabled",
-    },
-  },
-} as const satisfies AuthSchema;
-
-export const repository = new SheetOrmAuthRepository({ db, schema });
+export const repository = new SheetOrmAuthRepository({
+  db,
+  schema: authTables.schema,
+});
 ```
 
 生成した Repository は `AppsScriptAuth` にそのまま渡せます。
@@ -124,7 +99,7 @@ const auth = new AppsScriptAuth({
 
 ## Customize Tables
 
-model name と physical field name は `createAuthTables()` の plain object で変更できます。Repository に渡す `AuthSchema` も同じ mapping に合わせます。
+model name と physical field name は `createAuthTables()` の plain object で変更できます。解決済み mapping は `authTables.schema` から取得するため、Repository 用に同じ設定を再記述する必要はありません。
 
 ```ts
 export const authTables = createAuthTables({

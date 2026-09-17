@@ -1,4 +1,4 @@
-import { createAuthTables, type AuthSchema } from "@gasboost/auth";
+import { createAuthTables } from "@gasboost/auth";
 import { InMemoryCacheService } from "@gasboost/fake-core";
 import { NodeUtilities } from "@gasboost/fake-node";
 import { SheetDB, SheetTable } from "@gasboost/sheetorm";
@@ -31,34 +31,10 @@ describe("createAuthTables consumer", () => {
       utilities: new NodeUtilities(),
     });
 
-    const schema = {
-      user: {
-        modelName: "members",
-        fields: { id: "memberId", name: "displayName" },
-      },
-      account: {
-        modelName: "credentials",
-        fields: {
-          id: "id",
-          userId: "userId",
-          provider: "provider",
-          providerAccountId: "providerAccountId",
-          passwordHash: "passwordHash",
-        },
-      },
-      passwordReset: {
-        modelName: "resetTokens",
-        fields: {
-          id: "id",
-          accountId: "accountId",
-          tokenHash: "tokenHash",
-          expiresAt: "expiresAt",
-          enabled: "enabled",
-        },
-      },
-    } as const satisfies AuthSchema;
-
-    const repository = new SheetOrmAuthRepository({ db, schema });
+    const repository = new SheetOrmAuthRepository({
+      db,
+      schema: definitions.schema,
+    });
 
     expect(repository.user.userTable).toBe(db.definition("members"));
     expect(repository.user.accountTable).toBe(db.definition("credentials"));

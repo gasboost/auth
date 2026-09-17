@@ -8,7 +8,38 @@ describe("createAuthTables", () => {
   it("SheetORMに依存しない名前付きtable definitionを返す", () => {
     const tables = createAuthTables();
 
-    expect(Object.keys(tables)).toEqual(["user", "account", "passwordReset"]);
+    expect(Object.keys(tables)).toEqual([
+      "schema",
+      "user",
+      "account",
+      "passwordReset",
+    ]);
+    expect(tables.schema).toEqual({
+      user: {
+        modelName: "user",
+        fields: { id: "id", name: "name" },
+      },
+      account: {
+        modelName: "account",
+        fields: {
+          id: "id",
+          userId: "userId",
+          provider: "provider",
+          providerAccountId: "providerAccountId",
+          passwordHash: "passwordHash",
+        },
+      },
+      passwordReset: {
+        modelName: "passwordReset",
+        fields: {
+          id: "id",
+          accountId: "accountId",
+          tokenHash: "tokenHash",
+          expiresAt: "expiresAt",
+          enabled: "enabled",
+        },
+      },
+    });
     expect(tables.user.name).toBe("user");
     expect(tables.user.primaryKey).toBe("id");
     expect(tables.account.name).toBe("account");
@@ -85,6 +116,7 @@ describe("createAuthTables", () => {
     expectTypeOf(tables.user.primaryKey).toEqualTypeOf<"memberId">();
     expectTypeOf(tables.account.name).toEqualTypeOf<"credentials">();
     expectTypeOf(tables.passwordReset.name).toEqualTypeOf<"resetTokens">();
+    expectTypeOf(tables.schema.user.fields.id).toEqualTypeOf<"memberId">();
 
     expect(
       tables.user.schema.parse({ memberId: "u1", displayName: "Taro" }),

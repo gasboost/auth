@@ -6,7 +6,6 @@ import {
   PasswordReset,
   authPattern,
   createAuthTables,
-  type AuthSchema,
 } from "@gasboost/auth";
 import { InMemoryCacheService } from "@gasboost/fake-core";
 import { NodeUtilities } from "@gasboost/fake-node";
@@ -15,38 +14,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { SheetOrmAuthRepository } from "../src/SheetOrmAuthRepository";
 import { TestGateway } from "./TestGateway";
-
-const authSchema = {
-  user: {
-    modelName: "user",
-    fields: {
-      id: "id",
-      name: "name",
-    },
-  },
-
-  account: {
-    modelName: "account",
-    fields: {
-      id: "id",
-      userId: "userId",
-      provider: "provider",
-      providerAccountId: "providerAccountId",
-      passwordHash: "passwordHash",
-    },
-  },
-
-  passwordReset: {
-    modelName: "passwordReset",
-    fields: {
-      id: "id",
-      accountId: "accountId",
-      tokenHash: "tokenHash",
-      expiresAt: "expiresAt",
-      enabled: "enabled",
-    },
-  },
-} as const satisfies AuthSchema;
 
 function createRepository() {
   const definitions = createAuthTables();
@@ -67,7 +34,7 @@ function createRepository() {
 
   const repository = new SheetOrmAuthRepository({
     db,
-    schema: authSchema,
+    schema: definitions.schema,
   });
 
   return {

@@ -93,6 +93,7 @@ export function createAuthTables<
   } as PasswordResetShape<typeof schema>);
 
   return {
+    schema,
     user: keyedTable({
       name: schema.user.modelName,
       schema: userSchema,

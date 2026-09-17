@@ -108,7 +108,7 @@ try {
   ensurePeerDependency({
     packageJson: packedPackageJson,
     packageName: "@gasboost/auth",
-    version: "^0.3.0",
+    version: "^0.4.0",
   });
 
   ensurePeerDependency({
@@ -160,7 +160,6 @@ try {
     `import {
   AppsScriptAuth,
   createAuthTables,
-  type AuthSchema,
 } from "@gasboost/auth";
 
 import {
@@ -180,33 +179,6 @@ const tables = [
   new SheetTable({ ...definitions.passwordReset, dbId: "spreadsheet-id" }),
 ] as const;
 
-const schema = {
-  user: {
-    modelName: "user",
-    fields: { id: "id", name: "name" },
-  },
-  account: {
-    modelName: "account",
-    fields: {
-      id: "id",
-      userId: "userId",
-      provider: "provider",
-      providerAccountId: "providerAccountId",
-      passwordHash: "passwordHash",
-    },
-  },
-  passwordReset: {
-    modelName: "passwordReset",
-    fields: {
-      id: "id",
-      accountId: "accountId",
-      tokenHash: "tokenHash",
-      expiresAt: "expiresAt",
-      enabled: "enabled",
-    },
-  },
-} as const satisfies AuthSchema;
-
 const db = new SheetDB({
   tables,
   gateway: {} as never,
@@ -217,7 +189,7 @@ const db = new SheetDB({
 const repository =
   new SheetOrmAuthRepository({
     db,
-    schema,
+    schema: definitions.schema,
   });
 
 new AppsScriptAuth({
