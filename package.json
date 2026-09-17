@@ -15,6 +15,7 @@
     "format:fix": "pnpm -r format:fix",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "build": "pnpm -r build"
+    "build": "pnpm -r build",
+    "pack:check": "node scripts/auth-pack-smoke.mjs"
   }
 }

@@ -61,10 +61,6 @@ jobs:
       - name: Build auth-app
         run: pnpm --filter @gasboost/auth-app build
 
-      - name: Pack auth-app
-        working-directory: packages/auth-app
-        run: pnpm pack
-
       - name: Typecheck auth-sheetorm
         run: pnpm --filter @gasboost/auth-sheetorm typecheck
 
@@ -73,9 +69,6 @@ jobs:
 
       - name: Build auth-sheetorm
         run: pnpm --filter @gasboost/auth-sheetorm build
-
-      - name: Verify auth-sheetorm package
-        run: pnpm --filter @gasboost/auth-sheetorm pack:check
 
       - name: Typecheck auth-realtime-firebase
         run: pnpm --filter @gasboost/auth-realtime-firebase typecheck
@@ -86,6 +79,5 @@ jobs:
       - name: Build auth-realtime-firebase
         run: pnpm --filter @gasboost/auth-realtime-firebase build
 
-      - name: Pack auth-realtime-firebase
-        working-directory: packages/auth-realtime-firebase
-        run: pnpm pack
+      - name: Verify packed packages
+        run: pnpm pack:check

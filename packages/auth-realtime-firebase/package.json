@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-realtime-firebase",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Firebase Authentication integration adapter for @gasboost/auth.",
   "keywords": [
     "google-apps-script",
@@ -14,6 +14,7 @@
     "gasboost"
   ],
   "license": "MIT",
+  "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [

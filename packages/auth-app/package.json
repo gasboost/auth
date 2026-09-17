@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-app",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Authentication middleware adapter for @gasboost/auth and @gasboost/app.",
   "keywords": [
     "google-apps-script",
@@ -13,6 +13,7 @@
     "gasboost"
   ],
   "license": "MIT",
+  "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
