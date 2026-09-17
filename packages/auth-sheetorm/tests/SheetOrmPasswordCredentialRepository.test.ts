@@ -5,53 +5,23 @@ import {
   PasswordCredential,
   PasswordReset,
   authPattern,
-  type AuthSchema,
+  createAuthTables,
 } from "@gasboost/auth";
 import { InMemoryCacheService } from "@gasboost/fake-core";
 import { NodeUtilities } from "@gasboost/fake-node";
-import { SheetDB } from "@gasboost/sheetorm";
+import { SheetDB, SheetTable } from "@gasboost/sheetorm";
 import { describe, expect, it, vi } from "vitest";
 
-import { createAuthSchema } from "../src/createAuthSchema";
 import { SheetOrmAuthRepository } from "../src/SheetOrmAuthRepository";
 import { TestGateway } from "./TestGateway";
 
-const authSchema = {
-  dbId: "auth-db",
-
-  user: {
-    modelName: "user",
-    fields: {
-      id: "id",
-      name: "name",
-    },
-  },
-
-  account: {
-    modelName: "account",
-    fields: {
-      id: "id",
-      userId: "userId",
-      provider: "provider",
-      providerAccountId: "providerAccountId",
-      passwordHash: "passwordHash",
-    },
-  },
-
-  passwordReset: {
-    modelName: "passwordReset",
-    fields: {
-      id: "id",
-      accountId: "accountId",
-      tokenHash: "tokenHash",
-      expiresAt: "expiresAt",
-      enabled: "enabled",
-    },
-  },
-} as const satisfies AuthSchema;
-
 function createRepository() {
-  const tables = createAuthSchema(authSchema);
+  const definitions = createAuthTables();
+  const tables = [
+    new SheetTable({ ...definitions.user, dbId: "auth-db" }),
+    new SheetTable({ ...definitions.account, dbId: "auth-db" }),
+    new SheetTable({ ...definitions.passwordReset, dbId: "auth-db" }),
+  ] as const;
   const gateway = new TestGateway();
   const utilities = new NodeUtilities();
 
@@ -64,8 +34,7 @@ function createRepository() {
 
   const repository = new SheetOrmAuthRepository({
     db,
-    schema: authSchema,
-    tables,
+    schema: definitions.schema,
   });
 
   return {

@@ -28,24 +28,20 @@ export class SheetOrmAuthRepository<
   constructor({
     db,
     schema,
-    tables,
   }: {
     db: SheetDB<T>;
     schema: SheetOrmAuthSchema<T, U, A, R>;
-    tables: T;
   }) {
     this.account = new SheetOrmAccountRepository(db, schema);
 
     this.user = new SheetOrmUserRepository({
       db,
       schema,
-      tables,
     });
 
     this.passwordCredential = new SheetOrmPasswordCredentialRepository({
       db,
       schema,
-      tables,
     });
   }
 }

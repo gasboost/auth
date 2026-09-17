@@ -108,13 +108,13 @@ try {
   ensurePeerDependency({
     packageJson: packedPackageJson,
     packageName: "@gasboost/auth",
-    version: "^0.2.0",
+    version: "^0.4.0",
   });
 
   ensurePeerDependency({
     packageJson: packedPackageJson,
     packageName: "@gasboost/sheetorm",
-    version: "^2.0.0",
+    version: "^3.1.0",
   });
 
   writeFileSync(
@@ -126,7 +126,7 @@ try {
         dependencies: {
           "@gasboost/auth": `file:${authTarball}`,
           "@gasboost/auth-sheetorm": `file:${authSheetOrmTarball}`,
-          "@gasboost/sheetorm": "2.0.0",
+          "@gasboost/sheetorm": "3.1.0",
           typescript: "^7.0.0-dev.20260901",
         },
       },
@@ -159,27 +159,25 @@ try {
     join(consumerDirectory, "index.ts"),
     `import {
   AppsScriptAuth,
-  AuthSchemaConfig,
+  createAuthTables,
 } from "@gasboost/auth";
 
 import {
-  createAuthSchema,
   SheetOrmAuthRepository,
 } from "@gasboost/auth-sheetorm";
 
 import {
   SheetDB,
+  SheetTable,
 } from "@gasboost/sheetorm";
 
-const authSchemaConfig =
-  new AuthSchemaConfig({
-    dbId: "spreadsheet-id",
-  });
+const definitions = createAuthTables();
 
-const tables =
-  createAuthSchema(
-    authSchemaConfig.schema,
-  );
+const tables = [
+  new SheetTable({ ...definitions.user, dbId: "spreadsheet-id" }),
+  new SheetTable({ ...definitions.account, dbId: "spreadsheet-id" }),
+  new SheetTable({ ...definitions.passwordReset, dbId: "spreadsheet-id" }),
+] as const;
 
 const db = new SheetDB({
   tables,
@@ -191,9 +189,7 @@ const db = new SheetDB({
 const repository =
   new SheetOrmAuthRepository({
     db,
-    schema:
-      authSchemaConfig.schema,
-    tables,
+    schema: definitions.schema,
   });
 
 new AppsScriptAuth({
