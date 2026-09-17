@@ -2,11 +2,8 @@ export { AppsScriptAuth } from "./AppsScriptAuth";
 
 export type { AppsScriptAuthRepository } from "./storage/AppsScriptAuthRepository";
 
-export {
-  AuthSchemaConfig,
-  type AuthSchema,
-  type AuthSchemaOptions,
-} from "./schema/AuthSchema";
+export type { AuthSchema, AuthSchemaOptions } from "./schema/AuthSchema";
+export { createAuthTables } from "./schema/createAuthTables";
 
 export { authPattern, type AuthPattern } from "./AuthPattern";
 

@@ -29,35 +29,15 @@ export class SheetOrmUserRepository<
   constructor({
     db,
     schema,
-    tables,
   }: {
     db: SheetDB<T>;
     schema: SheetOrmAuthSchema<T, U, A, R>;
-    tables: T;
   }) {
     this.db = db;
     this.schema = schema;
 
-    const userTable = tables.find(
-      (table): table is SheetOrmTableByName<T, U> =>
-        table.name === schema.user.modelName,
-    );
-
-    if (!userTable) {
-      throw new Error(`User table '${schema.user.modelName}' not found`);
-    }
-
-    const accountTable = tables.find(
-      (table): table is SheetOrmTableByName<T, A> =>
-        table.name === schema.account.modelName,
-    );
-
-    if (!accountTable) {
-      throw new Error(`Account table '${schema.account.modelName}' not found`);
-    }
-
-    this.userTable = userTable;
-    this.accountTable = accountTable;
+    this.userTable = db.definition(schema.user.modelName);
+    this.accountTable = db.definition(schema.account.modelName);
   }
 
   public async find(id: string): Promise<User | null> {

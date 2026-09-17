@@ -10,7 +10,7 @@ export type SheetOrmTableName<T extends SheetOrmSchema> = T[number]["name"];
 export type SheetOrmTableByName<
   T extends SheetOrmSchema,
   N extends SheetOrmTableName<T>,
-> = Extract<T[number], { readonly name: N }>;
+> = Extract<T[number], { name: N }>;
 
 export type SheetOrmRecord<
   T extends SheetOrmSchema,
@@ -21,11 +21,12 @@ export type SheetOrmFieldAccepting<
   T extends SheetOrmSchema,
   N extends SheetOrmTableName<T>,
   V,
-> = {
-  [K in keyof SheetOrmRecord<T, N>]: V extends SheetOrmRecord<T, N>[K]
-    ? K
-    : never;
-}[keyof SheetOrmRecord<T, N>] &
+> = Extract<keyof SheetOrmRecord<T, N>, string> &
+  {
+    [K in keyof SheetOrmRecord<T, N>]: V extends SheetOrmRecord<T, N>[K]
+      ? K
+      : never;
+  }[keyof SheetOrmRecord<T, N>] &
   string;
 
 export type SheetOrmUserSchema<

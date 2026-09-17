@@ -1,5 +1,4 @@
 export type AuthSchemaOptions = {
-  dbId: string;
   user?: {
     modelName?: string;
     fields?: {
@@ -30,7 +29,6 @@ export type AuthSchemaOptions = {
 };
 
 export type AuthSchema = {
-  dbId: string;
   user: {
     modelName: string;
     fields: {
@@ -82,9 +80,7 @@ type PropertyOrDefault<T, K extends PropertyKey, Default extends string> = [
       : Default
     : Default;
 
-type ResolveAuthSchema<O extends AuthSchemaOptions> = {
-  dbId: O["dbId"];
-
+export type ResolveAuthSchema<O extends AuthSchemaOptions> = {
   user: {
     modelName: PropertyOrDefault<Section<O, "user">, "modelName", "user">;
     fields: {
@@ -152,45 +148,37 @@ type ResolveAuthSchema<O extends AuthSchemaOptions> = {
   };
 };
 
-export class AuthSchemaConfig<
-  const O extends AuthSchemaOptions = { dbId: "" },
-> {
-  public readonly schema: ResolveAuthSchema<O>;
-
-  constructor(options: O = { dbId: "" } as O) {
-    this.schema = {
-      dbId: options.dbId,
-
-      user: {
-        modelName: options.user?.modelName ?? "user",
-        fields: {
-          id: options.user?.fields?.id ?? "id",
-          name: options.user?.fields?.name ?? "name",
-        },
+export function resolveAuthSchema<const O extends AuthSchemaOptions>(
+  options: O,
+): ResolveAuthSchema<O> {
+  return {
+    user: {
+      modelName: options.user?.modelName ?? "user",
+      fields: {
+        id: options.user?.fields?.id ?? "id",
+        name: options.user?.fields?.name ?? "name",
       },
-
-      account: {
-        modelName: options.account?.modelName ?? "account",
-        fields: {
-          id: options.account?.fields?.id ?? "id",
-          userId: options.account?.fields?.userId ?? "userId",
-          provider: options.account?.fields?.provider ?? "provider",
-          providerAccountId:
-            options.account?.fields?.providerAccountId ?? "providerAccountId",
-          passwordHash: options.account?.fields?.passwordHash ?? "passwordHash",
-        },
+    },
+    account: {
+      modelName: options.account?.modelName ?? "account",
+      fields: {
+        id: options.account?.fields?.id ?? "id",
+        userId: options.account?.fields?.userId ?? "userId",
+        provider: options.account?.fields?.provider ?? "provider",
+        providerAccountId:
+          options.account?.fields?.providerAccountId ?? "providerAccountId",
+        passwordHash: options.account?.fields?.passwordHash ?? "passwordHash",
       },
-
-      passwordReset: {
-        modelName: options.passwordReset?.modelName ?? "passwordReset",
-        fields: {
-          id: options.passwordReset?.fields?.id ?? "id",
-          accountId: options.passwordReset?.fields?.accountId ?? "accountId",
-          tokenHash: options.passwordReset?.fields?.tokenHash ?? "tokenHash",
-          expiresAt: options.passwordReset?.fields?.expiresAt ?? "expiresAt",
-          enabled: options.passwordReset?.fields?.enabled ?? "enabled",
-        },
+    },
+    passwordReset: {
+      modelName: options.passwordReset?.modelName ?? "passwordReset",
+      fields: {
+        id: options.passwordReset?.fields?.id ?? "id",
+        accountId: options.passwordReset?.fields?.accountId ?? "accountId",
+        tokenHash: options.passwordReset?.fields?.tokenHash ?? "tokenHash",
+        expiresAt: options.passwordReset?.fields?.expiresAt ?? "expiresAt",
+        enabled: options.passwordReset?.fields?.enabled ?? "enabled",
       },
-    } as ResolveAuthSchema<O>;
-  }
+    },
+  } as ResolveAuthSchema<O>;
 }

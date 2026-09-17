@@ -29,37 +29,15 @@ export class SheetOrmPasswordCredentialRepository<
   constructor({
     db,
     schema,
-    tables,
   }: {
     db: SheetDB<T>;
     schema: SheetOrmAuthSchema<T, U, A, R>;
-    tables: T;
   }) {
     this.db = db;
     this.schema = schema;
 
-    const accountTable = tables.find(
-      (table): table is SheetOrmTableByName<T, A> =>
-        table.name === schema.account.modelName,
-    );
-
-    if (!accountTable) {
-      throw new Error(`Account table '${schema.account.modelName}' not found`);
-    }
-
-    const passwordResetTable = tables.find(
-      (table): table is SheetOrmTableByName<T, R> =>
-        table.name === schema.passwordReset.modelName,
-    );
-
-    if (!passwordResetTable) {
-      throw new Error(
-        `Password reset table '${schema.passwordReset.modelName}' not found`,
-      );
-    }
-
-    this.accountTable = accountTable;
-    this.passwordResetTable = passwordResetTable;
+    this.accountTable = db.definition(schema.account.modelName);
+    this.passwordResetTable = db.definition(schema.passwordReset.modelName);
   }
 
   public async findByResetTokenHash(
