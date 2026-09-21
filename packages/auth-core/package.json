@@ -25,6 +25,10 @@
     ".": {
       "default": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./authorization": {
+      "default": "./dist/authorization/index.js",
+      "types": "./dist/authorization/index.d.ts"
     }
   },
   "repository": {

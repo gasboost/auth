@@ -173,6 +173,39 @@ await auth.session.get("session-id");
 await auth.signOut.execute("session-id");
 ```
 
+## Authorization Middleware
+
+`authorization()` は、`authentication(auth)` が state に保存した `session.userId` を使って `AppsScriptAuthorization.can()` に委譲します。token の再検証、Session Storage へのアクセス、Repository への直接アクセスは行いません。
+
+```ts
+import {
+  authentication,
+  authorization as requireAuthorization,
+} from "@gasboost/auth-app";
+
+const app = new AppsScript()
+  .use(authentication(auth))
+  .use(
+    requireAuthorization(authorization, {
+      project: ["update"],
+    }),
+  )
+  .call("updateProject", updateProject);
+```
+
+許可されない場合は `Forbidden` を throw します。認証に失敗した場合の `Unauthorized` とは区別されます。
+
+`authorizationHandlers(authorization)` は role / permission assignment 用の handler を生成します。
+
+```ts
+const handlers = authorizationHandlers(authorization);
+
+app.call("assignRole", handlers.role.assign);
+app.call("allowPermission", handlers.permission.allow);
+```
+
+これらの handler は強い権限を持つ master operation です。自動登録や暗黙の管理権限付与は行わないため、公開する RPC 名と保護用 middleware は application 側で明示してください。
+
 ## Authenticated RPC
 
 認証が必要な RPC は `AuthenticatedInput` を利用します。

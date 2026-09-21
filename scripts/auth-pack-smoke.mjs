@@ -19,17 +19,30 @@ const packages = [
   {
     name: "@gasboost/auth",
     directory: join(rootDirectory, "packages", "auth-core"),
-    exports: ["AppsScriptAuth", "createAuthTables"],
+    exports: [
+      "AppsScriptAuth",
+      "AppsScriptAuthorization",
+      "createAuthTables",
+      "createAuthorizationTables",
+    ],
+    subpathExports: {
+      "./authorization": ["AuthorizationPolicy"],
+    },
   },
   {
     name: "@gasboost/auth-app",
     directory: join(rootDirectory, "packages", "auth-app"),
-    exports: ["authentication", "handlers"],
+    exports: [
+      "authentication",
+      "authorization",
+      "authorizationHandlers",
+      "handlers",
+    ],
   },
   {
     name: "@gasboost/auth-sheetorm",
     directory: join(rootDirectory, "packages", "auth-sheetorm"),
-    exports: ["SheetOrmAuthRepository"],
+    exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
       "@gasboost/auth": "^0.4.0",
       "@gasboost/sheetorm": "^3.1.0",
@@ -196,6 +209,16 @@ try {
   for (const exportName of ${JSON.stringify(packageMetadata.exports)}) {
     if (actual[exportName] === undefined) {
       throw new Error("${packageMetadata.name} missing export " + exportName);
+    }
+  }
+  for (const [subpath, exportNames] of Object.entries(${JSON.stringify(
+    packageMetadata.subpathExports ?? {},
+  )})) {
+    const subpathActual = require("${packageMetadata.name}" + subpath.slice(1));
+    for (const exportName of exportNames) {
+      if (subpathActual[exportName] === undefined) {
+        throw new Error("${packageMetadata.name}" + subpath + " missing export " + exportName);
+      }
     }
   }
 }`,
