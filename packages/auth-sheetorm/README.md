@@ -97,6 +97,29 @@ const auth = new AppsScriptAuth({
 });
 ```
 
+Authorization assignment も同じ流れで `SheetOrmAuthorizationRepository` を利用できます。permission vocabulary や role definition は保存せず、`createAuthorizationTables()` が作る assignment table だけを `SheetTable` に具体化します。
+
+```ts
+import { createAuthorizationTables } from "@gasboost/auth";
+import { SheetOrmAuthorizationRepository } from "@gasboost/auth-sheetorm";
+
+export const authorizationTables = createAuthorizationTables();
+
+const authorizationRoleTable = new SheetTable({
+  ...authorizationTables.role,
+  dbId,
+});
+const authorizationPermissionTable = new SheetTable({
+  ...authorizationTables.permission,
+  dbId,
+});
+
+export const authorizationRepository = new SheetOrmAuthorizationRepository({
+  db,
+  schema: authorizationTables.schema,
+});
+```
+
 ## Customize Tables
 
 model name と physical field name は `createAuthTables()` の plain object で変更できます。解決済み mapping は `authTables.schema` から取得するため、Repository 用に同じ設定を再記述する必要はありません。

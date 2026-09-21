@@ -1,4 +1,8 @@
-import type { AuthPattern, AuthSchema } from "@gasboost/auth";
+import type {
+  AuthPattern,
+  AuthSchema,
+  AuthorizationSchema,
+} from "@gasboost/auth";
 import type { SheetTable } from "@gasboost/sheetorm";
 import type { z } from "zod";
 
@@ -80,4 +84,40 @@ export type SheetOrmAuthSchema<
   user: SheetOrmUserSchema<T, U>;
   account: SheetOrmAccountSchema<T, A>;
   passwordReset: SheetOrmPasswordResetSchema<T, R>;
+};
+
+export type SheetOrmAuthorizationRoleSchema<
+  T extends SheetOrmSchema,
+  N extends SheetOrmTableName<T>,
+> = AuthorizationSchema["role"] & {
+  modelName: N;
+
+  fields: {
+    id: SheetOrmFieldAccepting<T, N, string>;
+    userId: SheetOrmFieldAccepting<T, N, string>;
+    role: SheetOrmFieldAccepting<T, N, string>;
+  };
+};
+
+export type SheetOrmAuthorizationPermissionSchema<
+  T extends SheetOrmSchema,
+  N extends SheetOrmTableName<T>,
+> = AuthorizationSchema["permission"] & {
+  modelName: N;
+
+  fields: {
+    id: SheetOrmFieldAccepting<T, N, string>;
+    userId: SheetOrmFieldAccepting<T, N, string>;
+    permission: SheetOrmFieldAccepting<T, N, string>;
+    effect: SheetOrmFieldAccepting<T, N, "allow" | "deny">;
+  };
+};
+
+export type SheetOrmAuthorizationSchema<
+  T extends SheetOrmSchema,
+  R extends SheetOrmTableName<T>,
+  P extends SheetOrmTableName<T>,
+> = {
+  role: SheetOrmAuthorizationRoleSchema<T, R>;
+  permission: SheetOrmAuthorizationPermissionSchema<T, P>;
 };

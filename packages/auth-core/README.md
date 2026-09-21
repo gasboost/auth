@@ -90,6 +90,49 @@ const repository: AppsScriptAuthRepository = {
 
 将来的に SheetORM 向け adapter は auth-core とは別 package として提供する想定です。
 
+## Authorization
+
+アプリケーション内部の認可には、GAS runtime に依存しない `AuthorizationPolicy` と、Backend service の `AppsScriptAuthorization` を利用できます。
+
+```ts
+import {
+  AppsScriptAuthorization,
+  createAuthorizationTables,
+} from "@gasboost/auth";
+import { AuthorizationPolicy } from "@gasboost/auth/authorization";
+
+export const authorizationPolicy = new AuthorizationPolicy({
+  project: ["read", "create", "update", "delete"],
+  authorization: ["manage"],
+} as const)
+  .linkRole("admin", {
+    project: ["read", "create", "update", "delete"],
+    authorization: ["manage"],
+  })
+  .linkRole("member", {
+    project: ["read"],
+  });
+
+const authorizationTables = createAuthorizationTables();
+
+const authorization = new AppsScriptAuthorization({
+  policy: authorizationPolicy,
+  repository: authorizationRepository,
+});
+```
+
+`@gasboost/auth/authorization` は pure な subpath export です。Frontend / shared code では `AuthorizationPolicy` だけを import し、Backend で取得した effective permissions の表示制御に同じ `can()` を使えます。
+
+```ts
+const permissions = await authorization.resolve(session.userId);
+
+authorizationPolicy.can(permissions, {
+  project: ["update"],
+});
+```
+
+Role definition と permission vocabulary は application code が source of truth です。Repository には assignment だけを保存し、未知の role / permission は grant せず fail closed になります。
+
 ## Initialize
 
 `AppsScriptAuth` に Repository、GAS runtime、Session 設定、認証方式の設定を渡します。

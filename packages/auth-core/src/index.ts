@@ -1,9 +1,24 @@
 export { AppsScriptAuth } from "./AppsScriptAuth";
+export { AppsScriptAuthorization } from "./authorization/AppsScriptAuthorization";
 
 export type { AppsScriptAuthRepository } from "./storage/AppsScriptAuthRepository";
+export type { AuthorizationRepository } from "./authorization/AuthorizationRepository";
+export type {
+  EffectivePermissions,
+  PermissionEffect,
+  PermissionOf,
+  PermissionRequirement,
+  PermissionStatement,
+  StoredPermissionOverride,
+} from "./authorization/AuthorizationPolicy";
 
 export type { AuthSchema, AuthSchemaOptions } from "./schema/AuthSchema";
 export { createAuthTables } from "./schema/createAuthTables";
+export type {
+  AuthorizationSchema,
+  AuthorizationSchemaOptions,
+} from "./schema/AuthorizationSchema";
+export { createAuthorizationTables } from "./schema/createAuthorizationTables";
 
 export { authPattern, type AuthPattern } from "./AuthPattern";
 
