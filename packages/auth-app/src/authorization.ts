@@ -19,6 +19,10 @@ export function authorization<const TStatement extends PermissionStatement>(
   requirement: PermissionRequirement<TStatement>,
 ): AppsScriptMiddleware<AuthState, AuthState> {
   return async (context, next) => {
+    if (context.invocation.type !== "call") {
+      return next();
+    }
+
     const session = context.state.get("session");
     const allowed = await service.can(session.userId, requirement);
 

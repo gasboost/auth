@@ -13,6 +13,26 @@ function createAuthentication(session: AuthSession | null) {
 }
 
 describe("authorization", () => {
+  it.each(["get", "post"] as const)(
+    "%s invocationはauthorization serviceを呼ばず通過する",
+    async (invocationType) => {
+      const can = vi.fn();
+      const output = {} as GoogleAppsScript.Content.TextOutput;
+      const app = new AppsScript().use(createAuthentication(null)).use(
+        authorization({ can }, {
+          project: ["read"],
+        } as const),
+      );
+
+      const response = await (invocationType === "get"
+        ? app.get(() => output).callGet({} as never)
+        : app.post(() => output).callPost({} as never));
+
+      expect(response).toBe(output);
+      expect(can).not.toHaveBeenCalled();
+    },
+  );
+
   it("session.userIdを使ってauthorization serviceに委譲する", async () => {
     const session = {
       id: "session-1",

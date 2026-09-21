@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Modern authentication for Google Apps Script with email/password, Apps Script authentication, sessions, and password reset.",
   "keywords": [
     "google-apps-script",

@@ -38,13 +38,17 @@ const packages = [
       "authorizationHandlers",
       "handlers",
     ],
+    peers: {
+      "@gasboost/app": "^5.0.0",
+      "@gasboost/auth": "^0.5.0",
+    },
   },
   {
     name: "@gasboost/auth-sheetorm",
     directory: join(rootDirectory, "packages", "auth-sheetorm"),
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
-      "@gasboost/auth": "^0.4.0",
+      "@gasboost/auth": "^0.5.0",
       "@gasboost/sheetorm": "^3.1.0",
     },
   },
