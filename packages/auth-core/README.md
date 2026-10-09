@@ -258,6 +258,51 @@ User 検索
 Session 発行
 ```
 
+## Registration (without Session)
+
+`auth.registration` は、Session を発行せずに
+User と Account を登録するサーバー内部APIです。
+
+管理者によるユーザー登録など、
+登録対象ユーザーとしてサインインする必要がない場合に使用します。
+
+### Email / Password
+
+```ts
+const user = await auth.registration.email({
+  name: "Taro",
+  email: "taro@example.com",
+  password: temporaryPassword,
+});
+```
+
+### Apps Script
+
+```ts
+const user = await auth.registration.appsScript({
+  name: "Taro",
+});
+```
+
+Apps Script方式では
+`Session.getActiveUser().getEmail()` を使用するため、
+任意の他ユーザーを指定して登録することはできません。
+
+### Sign Upとの違い
+
+| API                              | User + Account | Session発行 |
+| -------------------------------- | -------------- | ----------- |
+| `auth.registration.email()`      | 作成           | なし        |
+| `auth.registration.appsScript()` | 作成           | なし        |
+| `auth.signUp.email()`            | 作成           | あり        |
+| `auth.signUp.appsScript()`       | 作成           | あり        |
+
+`isSignupEnabled: false` でも、
+認証方式自体が `enabled: true` ならRegistrationは利用できます。
+
+Registrationはメール送信やRole付与を行いません。
+呼び出し元で認証・認可を実施してください。
+
 ## Apps Script Sign Up
 
 Apps Script 認証では `Session.getActiveUser().getEmail()` を Identity として利用します。

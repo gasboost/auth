@@ -129,6 +129,7 @@ export class AppsScriptAuth<
 
     this.registration = new AppsScriptAuthRegistration({
       emailPassword: emailPasswordConfig,
+      appsScript: appsScriptConfig,
       repository,
       utilities: runtime.utilities,
       session: runtime.session,
