@@ -1,4 +1,5 @@
 import { AppsScriptAuthPassword } from "./api/AppsScriptAuthPassword";
+import { AppsScriptAuthRegistration } from "./api/AppsScriptAuthRegistration";
 import { AppsScriptAuthSession } from "./api/AppsScriptAuthSession";
 import { AppsScriptAuthSignIn } from "./api/AppsScriptAuthSignIn";
 import { AppsScriptAuthSignOut } from "./api/AppsScriptAuthSignOut";
@@ -59,6 +60,8 @@ export class AppsScriptAuth<
   public readonly signOut: AppsScriptAuthSignOut;
 
   public readonly password: AppsScriptAuthPasswordApi<TEmailPassword>;
+
+  public readonly registration: AppsScriptAuthRegistration;
 
   constructor({
     repository,
@@ -123,5 +126,13 @@ export class AppsScriptAuth<
           })
         : undefined
     ) as AppsScriptAuthPasswordApi<TEmailPassword>;
+
+    this.registration = new AppsScriptAuthRegistration({
+      emailPassword: emailPasswordConfig,
+      appsScript: appsScriptConfig,
+      repository,
+      utilities: runtime.utilities,
+      session: runtime.session,
+    });
   }
 }

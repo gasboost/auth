@@ -9,6 +9,7 @@ import {
 import { NodeUtilities } from "@gasboost/fake-node";
 import { describe, expect, it, vi } from "vitest";
 
+import { AppsScriptAuthRegistration } from "../src/api/AppsScriptAuthRegistration";
 import { AppsScriptAuth } from "../src/AppsScriptAuth";
 import type { AppsScriptAuthRepository } from "../src/storage/AppsScriptAuthRepository";
 
@@ -217,5 +218,78 @@ describe("AppsScriptAuth", () => {
     expect(auth.password).toBeDefined();
     expect(auth.password?.forgot).toBeTypeOf("function");
     expect(auth.password?.reset).toBeTypeOf("function");
+  });
+
+  describe("registration", () => {
+    it("AppsScriptAuthからRegistration APIを利用できる", () => {
+      const auth = new AppsScriptAuth({
+        repository: createRepository(),
+        runtime: createRuntime(),
+        session: {
+          storageType: "cache",
+        },
+      });
+
+      expect(auth.registration).toBeInstanceOf(AppsScriptAuthRegistration);
+
+      expect(auth.registration.email).toBeTypeOf("function");
+      expect(auth.registration.appsScript).toBeTypeOf("function");
+    });
+  });
+
+  it("AppsScriptAuth経由でApps Scriptユーザーを登録できる", async () => {
+    const repository = createRepository();
+
+    const auth = new AppsScriptAuth({
+      repository,
+      runtime: createRuntime(),
+      session: {
+        storageType: "cache",
+      },
+      appsScript: {
+        enabled: true,
+        isSignupEnabled: false,
+      },
+    });
+
+    const user = await auth.registration.appsScript({
+      name: "Staff",
+    });
+
+    expect(user.name).toBe("Staff");
+    expect(user.accounts).toHaveLength(1);
+    expect(user.accounts[0].userId).toBe(user.id);
+    expect(user.accounts[0].identity.providerName).toBe("appsScript");
+    expect(user.accounts[0].identity.accountId).toBe("user@example.com");
+    expect(repository.user.create).toHaveBeenCalledWith(user);
+  });
+
+  it("AppsScriptAuth経由でEmailPasswordユーザーを登録できる", async () => {
+    const repository = createRepository();
+
+    const auth = new AppsScriptAuth({
+      repository,
+      runtime: createRuntime(),
+      session: {
+        storageType: "cache",
+      },
+      emailPassword: {
+        enabled: true,
+        isSignupEnabled: false,
+        pepper: "pepper",
+      },
+    });
+
+    const user = await auth.registration.email({
+      name: "Taro",
+      email: "taro@example.com",
+      password: "temporaryPassword123",
+    });
+
+    expect(user.name).toBe("Taro");
+    expect(user.accounts).toHaveLength(1);
+    expect(user.accounts[0].identity.providerName).toBe("emailPassword");
+    expect(user.accounts[0].identity.accountId).toBe("taro@example.com");
+    expect(repository.user.create).toHaveBeenCalledWith(user);
   });
 });
