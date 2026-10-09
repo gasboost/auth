@@ -9,6 +9,7 @@ import {
 import { NodeUtilities } from "@gasboost/fake-node";
 import { describe, expect, it, vi } from "vitest";
 
+import { AppsScriptAuthRegistration } from "../src/api/AppsScriptAuthRegistration";
 import { AppsScriptAuth } from "../src/AppsScriptAuth";
 import type { AppsScriptAuthRepository } from "../src/storage/AppsScriptAuthRepository";
 
@@ -217,5 +218,22 @@ describe("AppsScriptAuth", () => {
     expect(auth.password).toBeDefined();
     expect(auth.password?.forgot).toBeTypeOf("function");
     expect(auth.password?.reset).toBeTypeOf("function");
+  });
+
+  describe("registration", () => {
+    it("AppsScriptAuthからRegistration APIを利用できる", () => {
+      const auth = new AppsScriptAuth({
+        repository: createRepository(),
+        runtime: createRuntime(),
+        session: {
+          storageType: "cache",
+        },
+      });
+
+      expect(auth.registration).toBeInstanceOf(AppsScriptAuthRegistration);
+
+      expect(auth.registration.email).toBeTypeOf("function");
+      expect(auth.registration.appsScript).toBeTypeOf("function");
+    });
   });
 });
