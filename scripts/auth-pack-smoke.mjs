@@ -32,8 +32,19 @@ const packages = [
   {
     name: "@gasboost/auth-client",
     directory: join(rootDirectory, "packages", "auth-client"),
-    exports: [],
+    exports: [
+      "authCore",
+      "authClient",
+      "memoryAuthStorage",
+      "localStorageAuthStorage",
+      "sessionStorageAuthStorage",
+    ],
     subpathExports: {
+      "./appsscript": [
+        "appsScriptAuth",
+        "appsScriptAuthRemote",
+        "authMetadataProvider",
+      ],
       "./metadata": ["AUTH_METADATA_KEY", "isAuthMetadata"],
     },
   },
@@ -186,6 +197,7 @@ try {
         private: true,
         dependencies: {
           "@gasboost/app": "^5.2.0",
+          "@gasboost/client": "^0.5.0",
           "@gasboost/auth": `file:${tarballs.get("@gasboost/auth")}`,
           "@gasboost/auth-app": `file:${tarballs.get("@gasboost/auth-app")}`,
           "@gasboost/auth-client": `file:${tarballs.get("@gasboost/auth-client")}`,
@@ -269,6 +281,19 @@ import {
 } from "@gasboost/auth-client/metadata";
 
 import {
+  memoryAuthStorage,
+  authClient,
+  authCore,
+  type AuthRemote,
+  type AuthStorage,
+} from "@gasboost/auth-client";
+import {
+  appsScriptAuth,
+  authMetadataProvider,
+} from "@gasboost/auth-client/appsscript";
+import { appsScriptClient } from "@gasboost/client";
+
+import {
   AppsScriptAuth,
   createAuthTables,
 } from "@gasboost/auth";
@@ -312,7 +337,7 @@ const repository =
     schema: definitions.schema,
   });
 
-new AppsScriptAuth({
+const serverAuth = new AppsScriptAuth({
   appsScript: {
     enabled: true,
     isSignupEnabled: true,
@@ -337,14 +362,34 @@ const metadata = {
 };
 isAuthMetadata(metadata[AUTH_METADATA_KEY]);
 const app = new AppsScript()
-  .use(authentication({} as never))
+  .calls(handlers(serverAuth))
+  .use(authentication(serverAuth))
   .call("updateProfile", (input: { name: string }, context) => ({
     name: input.name,
     userId: context.state.get("session").userId,
   }));
 const input: InferAppsScript<typeof app>["updateProfile"]["input"] = { name: "Taro" };
 void app.dispatch("updateProfile", input, metadata);
-void handlers;
+const storage: AuthStorage = memoryAuthStorage();
+const { client } = appsScriptClient<InferAppsScript<typeof app>>({
+  metadataProviders: [authMetadataProvider(storage)],
+});
+const auth = appsScriptAuth({ client, storage });
+void auth.signIn({ email: "user@example.com", password: "password" });
+void auth.signInAppsScript();
+void auth.signUp({ name: "Taro", email: "user@example.com", password: "password" });
+void auth.signUpAppsScript({ name: "Taro" });
+void auth.restoreSession();
+void auth.signOut();
+void client.updateProfile({ name: "Taro" });
+const remote: AuthRemote<{ token: string; user: null }, { email: string }, { name: string }> = {
+  signIn: async () => ({ token: "token", user: null }),
+  signUp: async () => ({ token: "token", user: null }),
+  getSession: async () => null,
+  signOut: async () => {},
+};
+authClient({ remote, storage });
+authCore({ storage });
 new FirebaseAuthHook({} as never);
 `,
   );
@@ -354,6 +399,47 @@ new FirebaseAuthHook({} as never);
   });
 
   run("node", [join(consumerDirectory, "require.cjs")]);
+
+  writeFileSync(
+    join(consumerDirectory, "root-consumer.ts"),
+    `import { authCore, authClient, memoryAuthStorage, type AuthRemote, type AuthStorage } from "@gasboost/auth-client";
+const storage: AuthStorage = memoryAuthStorage();
+const remote: AuthRemote<{ token: string; user: null }, {}, {}> = {
+  signIn: async () => ({ token: "token", user: null }),
+  signUp: async () => ({ token: "token", user: null }),
+  getSession: async () => null,
+  signOut: async () => {},
+};
+authCore({ storage });
+authClient({ remote, storage });
+`,
+  );
+  writeFileSync(
+    join(consumerDirectory, "tsconfig.root.json"),
+    JSON.stringify(
+      {
+        compilerOptions: {
+          target: "ES2020",
+          lib: ["ES2020"],
+          types: [],
+          module: "Node16",
+          moduleResolution: "Node16",
+          strict: true,
+          noEmit: true,
+        },
+        include: ["root-consumer.ts"],
+      },
+      null,
+      2,
+    ),
+  );
+  run(
+    "pnpm",
+    ["exec", "tsc", "-p", join(consumerDirectory, "tsconfig.root.json")],
+    {
+      cwd: consumerDirectory,
+    },
+  );
 
   run("pnpm", [
     "exec",

@@ -38,12 +38,14 @@ type BaseHandlers<TEmailPassword extends EmailPasswordOptions, THookResult> = {
     sessionId: Parameters<
       Auth<TEmailPassword, THookResult>["signOut"]["execute"]
     >[0];
-  }) => ReturnType<Auth<TEmailPassword, THookResult>["signOut"]["execute"]>;
+  }) => Promise<null>;
 };
 
 type PasswordHandlers = {
-  forgotPassword: PasswordApi["forgot"];
-  resetPassword: PasswordApi["reset"];
+  forgotPassword: (
+    input: Parameters<PasswordApi["forgot"]>[0],
+  ) => Promise<null>;
+  resetPassword: (input: Parameters<PasswordApi["reset"]>[0]) => Promise<null>;
 };
 
 export type AuthHandlers<
@@ -70,7 +72,10 @@ export function handlers<
 
     getSession: ({ sessionId }) => auth.session.get(sessionId),
 
-    signOut: ({ sessionId }) => auth.signOut.execute(sessionId),
+    signOut: async ({ sessionId }) => {
+      await auth.signOut.execute(sessionId);
+      return null;
+    },
   };
 
   const password = auth.password as PasswordApi | undefined;
@@ -81,7 +86,13 @@ export function handlers<
 
   return {
     ...baseHandlers,
-    forgotPassword: password.forgot.bind(password),
-    resetPassword: password.reset.bind(password),
+    forgotPassword: async (input: Parameters<PasswordApi["forgot"]>[0]) => {
+      await password.forgot(input);
+      return null;
+    },
+    resetPassword: async (input: Parameters<PasswordApi["reset"]>[0]) => {
+      await password.reset(input);
+      return null;
+    },
   } as AuthHandlers<TEmailPassword, THookResult>;
 }

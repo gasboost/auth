@@ -52,11 +52,14 @@ jobs:
       - name: Build auth-core
         run: pnpm --filter @gasboost/auth build
 
-      - name: Typecheck auth-client metadata
+      - name: Build auth-client
+        run: pnpm --filter @gasboost/auth-client build
+
+      - name: Typecheck auth-client
         run: pnpm --filter @gasboost/auth-client typecheck
 
-      - name: Build auth-client metadata
-        run: pnpm --filter @gasboost/auth-client build
+      - name: Test auth-client
+        run: pnpm --filter @gasboost/auth-client test
 
       - name: Typecheck auth-app
         run: pnpm --filter @gasboost/auth-app typecheck

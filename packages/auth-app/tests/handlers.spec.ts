@@ -1,3 +1,4 @@
+import { AppsScript } from "@gasboost/app";
 import { AppsScriptAuth } from "@gasboost/auth";
 import { describe, expect, it, vi } from "vitest";
 
@@ -101,9 +102,15 @@ describe("handlers", () => {
 
     const authHandlers = handlers(auth);
 
-    await authHandlers.signOut({
-      sessionId: "session-1",
-    });
+    expect(
+      await authHandlers.signOut({
+        sessionId: "session-1",
+      }),
+    ).toBeNull();
+    const response = await new AppsScript()
+      .calls(authHandlers)
+      .dispatch("signOut", { sessionId: "session-1" });
+    expect(response.contents).toBe("null");
 
     expect(execute).toHaveBeenCalledWith("session-1");
   });
@@ -131,14 +138,18 @@ describe("handlers", () => {
 
     const authHandlers = handlers(auth);
 
-    await authHandlers.forgotPassword({
-      email: "user@example.com",
-    });
+    expect(
+      await authHandlers.forgotPassword({
+        email: "user@example.com",
+      }),
+    ).toBeNull();
 
-    await authHandlers.resetPassword({
-      token: "token",
-      newPassword: "new-password",
-    });
+    expect(
+      await authHandlers.resetPassword({
+        token: "token",
+        newPassword: "new-password",
+      }),
+    ).toBeNull();
 
     expect(forgot).toHaveBeenCalledWith({
       email: "user@example.com",
