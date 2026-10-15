@@ -48,7 +48,7 @@ const packages = [
     ],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth": "^0.5.0",
+      "@gasboost/auth": "^0.6.0",
     },
   },
   {
