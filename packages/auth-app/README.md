@@ -175,7 +175,7 @@ client.signOut({
 ```
 
 `signOut` / `forgotPassword` / `resetPassword` の RPC 成功時の result は
-JSON として扱える `null` です（0.4.1 以降）。
+JSON として扱える `null` です（0.5.0 以降）。
 `@gasboost/auth` 側の API 自体は変更されません。
 
 ```ts
