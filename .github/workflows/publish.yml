@@ -103,16 +103,20 @@ jobs:
         run: pnpm --filter @gasboost/auth test
 
       - name: Build auth
-        if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-auth-app == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' || needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
+        if: ${{ needs.check-versions.outputs.publish-auth == 'true' || needs.check-versions.outputs.publish-auth-client == 'true' || needs.check-versions.outputs.publish-auth-app == 'true' || needs.check-versions.outputs.publish-sheetorm == 'true' || needs.check-versions.outputs.publish-realtime-firebase == 'true' }}
         run: pnpm --filter @gasboost/auth build
 
-      - name: Typecheck auth-client metadata
+      - name: Build auth-client
+        if: ${{ needs.check-versions.outputs.publish-auth-client == 'true' || needs.check-versions.outputs.publish-auth-app == 'true' }}
+        run: pnpm --filter @gasboost/auth-client build
+
+      - name: Typecheck auth-client
         if: ${{ needs.check-versions.outputs.publish-auth-client == 'true' || needs.check-versions.outputs.publish-auth-app == 'true' }}
         run: pnpm --filter @gasboost/auth-client typecheck
 
-      - name: Build auth-client metadata
-        if: ${{ needs.check-versions.outputs.publish-auth-client == 'true' || needs.check-versions.outputs.publish-auth-app == 'true' }}
-        run: pnpm --filter @gasboost/auth-client build
+      - name: Test auth-client
+        if: ${{ needs.check-versions.outputs.publish-auth-client == 'true' }}
+        run: pnpm --filter @gasboost/auth-client test
 
       - name: Typecheck auth-app
         if: ${{ needs.check-versions.outputs.publish-auth-app == 'true' }}

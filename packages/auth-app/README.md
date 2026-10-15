@@ -83,7 +83,9 @@ const { client } = appsScriptClient<AppType>({
 await client.updateProfile({ name: "Taro" });
 ```
 
-client の session lifecycle 管理は Issue #37 で追加します。
+session lifecycle 管理には `@gasboost/auth-client/appsscript` の
+`appsScriptAuth({ client, storage })` と `authMetadataProvider(storage)` を利用できます。
+詳細は [auth-client README](../auth-client/README.md) を参照してください。
 
 ## Authentication middleware
 
@@ -172,6 +174,8 @@ client.signOut({
 });
 ```
 
+`signOut` / `forgotPassword` / `resetPassword` の RPC 成功時の result は
+JSON として扱える `null` です（0.4.1 以降）。
 `@gasboost/auth` 側の API 自体は変更されません。
 
 ```ts
