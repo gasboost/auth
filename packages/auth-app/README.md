@@ -2,12 +2,12 @@
 
 `@gasboost/auth` と `@gasboost/app` を接続する authentication middleware adapter です。
 
-認証必須 RPC の input に session token を含め、RPC 実行前に既存の `auth.session.get(token)` を利用して session を検証します。
+RPC input とは独立した metadata に session token を含め、RPC 実行前に既存の `auth.session.get(token)` を利用して session を検証します。
 
 有効な session は `AppsScript` の state に保存されます。
 
 ```text
-RPC input
+RPC metadata["@gasboost/auth"]
    ↓
 token
    ↓
@@ -40,44 +40,50 @@ npm:
 npm install @gasboost/auth-app @gasboost/auth @gasboost/app
 ```
 
-## AuthenticatedInput
+## Auth metadata
 
-認証が必要な RPC では `AuthenticatedInput` を handler input に指定します。
-
-```ts
-import type { AuthenticatedInput } from "@gasboost/auth-app";
-```
-
-token だけ必要な場合:
+`@gasboost/app@^5.2.0` の RPC metadata を利用します。
+key / schema / validator は frontend と backend で共通の
+`@gasboost/auth-client/metadata` が提供します。
 
 ```ts
-type Input = AuthenticatedInput;
-```
+import {
+  AUTH_METADATA_KEY,
+  type AuthMetadata,
+} from "@gasboost/auth-client/metadata";
 
-これは以下の型になります。
-
-```ts
-type Input = {
-  token: string;
+const metadata = {
+  [AUTH_METADATA_KEY]: { token } satisfies AuthMetadata,
 };
+
+await app.dispatch("updateProfile", { name: "Taro" }, metadata);
 ```
 
-追加の input がある場合は generic parameter に object を指定します。
+handler input は業務入力だけを定義します。
+`AuthenticatedInput<T>` は 0.4.0 で削除しました。
+input の `token` は認証には使いません。旧方式との後方互換性はありません。
+
+`@gasboost/client` では metadata provider を登録することで、
+RPC ごとに token を渡さずに利用できます。
+frontend では `pnpm add @gasboost/client @gasboost/auth-client` で依存を追加します。
 
 ```ts
-type Input = AuthenticatedInput<{
-  name: string;
-}>;
+import { appsScriptClient } from "@gasboost/client";
+import { AUTH_METADATA_KEY } from "@gasboost/auth-client/metadata";
+
+const { client } = appsScriptClient<AppType>({
+  metadataProviders: [
+    () => {
+      const token = getCurrentToken();
+      return token ? { [AUTH_METADATA_KEY]: { token } } : undefined;
+    },
+  ],
+});
+
+await client.updateProfile({ name: "Taro" });
 ```
 
-これは以下の型になります。
-
-```ts
-type Input = {
-  name: string;
-  token: string;
-};
-```
+client の session lifecycle 管理は Issue #37 で追加します。
 
 ## Authentication middleware
 
@@ -116,7 +122,7 @@ const session = await auth.session.get(token);
 
 有効な session が取得できた場合、middleware はその session を `AppsScript` state に設定します。
 
-`@gasboost/app` v4 では `authentication()` の適用後、後続 handler の `context.state` から session が non-nullable として取得できます。
+`@gasboost/app` v5.2 以降では `authentication()` の適用後、後続 handler の `context.state` から session が non-nullable として取得できます。
 
 ## Auth handlers
 
@@ -135,7 +141,7 @@ const auth = new AppsScriptAuth({
   },
 });
 
-const app = new AppsScript().use(authentication(auth)).calls(handlers(auth));
+const app = new AppsScript().calls(handlers(auth)).use(authentication(auth));
 ```
 
 以下の RPC が公開されます。
@@ -208,15 +214,15 @@ app.call("allowPermission", handlers.permission.allow);
 
 ## Authenticated RPC
 
-認証が必要な RPC は `AuthenticatedInput` を利用します。
+認証が必要な RPC は `authentication(auth)` より後に登録します。
 
 ```ts
 import { AppsScript } from "@gasboost/app";
-import { authentication, type AuthenticatedInput } from "@gasboost/auth-app";
+import { authentication } from "@gasboost/auth-app";
 
 const app = new AppsScript()
   .use(authentication(auth))
-  .call("getProfile", (_input: AuthenticatedInput, context) => {
+  .call("getProfile", (_input, context) => {
     const session = context.state.get("session");
 
     return getProfile(session.userId);
@@ -225,12 +231,10 @@ const app = new AppsScript()
 
 `authentication(auth)` の通過後は session が state に存在することが型として保証されるため、`undefined` check は不要です。
 
-クライアント側では token が必須になります。
+クライアント側では metadata provider が token を供給します。
 
 ```ts
-client.getProfile({
-  token,
-});
+client.getProfile();
 ```
 
 追加 input が必要な場合:
@@ -239,9 +243,9 @@ client.getProfile({
 const app = new AppsScript().use(authentication(auth)).call(
   "updateProfile",
   (
-    input: AuthenticatedInput<{
+    input: {
       name: string;
-    }>,
+    },
     context,
   ) => {
     const session = context.state.get("session");
@@ -258,7 +262,6 @@ const app = new AppsScript().use(authentication(auth)).call(
 
 ```ts
 client.updateProfile({
-  token,
   name: "Taro",
 });
 ```
@@ -267,14 +270,14 @@ client.updateProfile({
 
 middleware はすべての RPC に認証を要求するわけではありません。
 
-token を持たない RPC input はそのまま後続 handler へ流れます。
+公開 RPC は `authentication(auth)` より前に登録します。middleware より後の RPC は input の有無にかかわらず認証必須です。
 
 ```ts
 const app = new AppsScript()
-  .use(authentication(auth))
   .call("signIn", (input: { email: string; password: string }) => {
     return auth.signIn.email(input);
-  });
+  })
+  .use(authentication(auth));
 ```
 
 クライアント側でも token は不要です。
@@ -289,11 +292,9 @@ client.signIn({
 input 自体を持たない公開 RPC も利用できます。
 
 ```ts
-const app = new AppsScript().use(authentication(auth)).call("health", () => {
-  return {
-    ok: true,
-  };
-});
+const app = new AppsScript()
+  .call("health", () => ({ ok: true }))
+  .use(authentication(auth));
 ```
 
 ## Session state
@@ -309,7 +310,7 @@ context.state.set("session", session);
 ```ts
 const app = new AppsScript()
   .use(authentication(auth))
-  .call("getProfile", (_input: AuthenticatedInput, context) => {
+  .call("getProfile", (_input, context) => {
     const session = context.state.get("session");
 
     session.id;
@@ -328,7 +329,7 @@ application user が必要な場合は `session.userId` を利用して applicat
 ```ts
 const app = new AppsScript()
   .use(authentication(auth))
-  .call("getProfile", async (_input: AuthenticatedInput, context) => {
+  .call("getProfile", async (_input, context) => {
     const session = context.state.get("session");
     const user = await userRepository.find(session.userId);
 
@@ -340,11 +341,12 @@ const app = new AppsScript()
 
 ## Unauthorized
 
-token プロパティが存在する場合、middleware は token を検証します。
+middleware より後に登録されたすべての RPC で auth metadata を検証します。
 
 以下の場合は `Unauthorized` error になります。
 
-- `token` が string ではない
+- auth metadata が存在しない、または object ではない
+- `token` が存在しない、string ではない、空文字、空白のみ
 - `auth.session.get(token)` が session を返さない
 - session が期限切れ
 
@@ -366,7 +368,7 @@ Session.getActiveUser().getEmail()
 application session
 ```
 
-この middleware では application の認証状態を RPC input の session token から確認します。
+この middleware では application の認証状態を RPC metadata の session token から確認します。
 
 ```text
 token
@@ -380,9 +382,7 @@ Apps Script Active User を application session の代替として扱いませ�
 
 ## Custom state
 
-## Custom state
-
-`@gasboost/app` v4 では middleware が追加する state は `.use()` によって型へ反映されます。
+`@gasboost/app` v5.2 以降では middleware が追加する state は `.use()` によって型へ反映されます。
 
 ```ts
 const app = new AppsScript().use(authentication(auth));
@@ -397,7 +397,7 @@ const app = new AppsScript()
     ok: true,
   }))
   .use(authentication(auth))
-  .call("getProfile", (_input: AuthenticatedInput, context) => {
+  .call("getProfile", (_input, context) => {
     const session = context.state.get("session");
 
     return getProfile(session.userId);
@@ -410,8 +410,8 @@ application 独自の state を追加する場合も、対応する middleware �
 
 `@gasboost/auth-app` が担当するもの:
 
-- authenticated RPC input の token contract
-- RPC input から token の取得
+- 共有 auth metadata contract の解釈
+- RPC metadata から token の取得
 - `auth.session.get(token)` による session 検証
 - session の AppsScript state への設定
 - invalid token の拒否
@@ -421,7 +421,6 @@ application 独自の state を追加する場合も、対応する middleware �
 - session storage の構築
 - repository の構築
 - User の取得
-- authorization
 - `Session.getActiveUser()` による identity 解決
 
 これらはそれぞれ `@gasboost/auth` または application の責務です。

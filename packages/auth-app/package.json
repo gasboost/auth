@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-app",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Authentication middleware adapter for @gasboost/auth and @gasboost/app.",
   "keywords": [
     "google-apps-script",
@@ -39,11 +39,11 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@gasboost/app": "^5.0.0",
-    "@gasboost/auth": "^0.5.0"
+    "@gasboost/app": "^5.2.0",
+    "@gasboost/auth": "^0.6.0"
   },
   "devDependencies": {
-    "@gasboost/app": "^5.0.0",
+    "@gasboost/app": "^5.2.0",
     "@gasboost/auth": "workspace:*",
     "@types/google-apps-script": "^2.0.13"
   },
@@ -54,5 +54,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "rm -rf dist && tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@gasboost/auth-client": "workspace:^"
   }
 }

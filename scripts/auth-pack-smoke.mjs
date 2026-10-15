@@ -30,6 +30,14 @@ const packages = [
     },
   },
   {
+    name: "@gasboost/auth-client",
+    directory: join(rootDirectory, "packages", "auth-client"),
+    exports: [],
+    subpathExports: {
+      "./metadata": ["AUTH_METADATA_KEY", "isAuthMetadata"],
+    },
+  },
+  {
     name: "@gasboost/auth-app",
     directory: join(rootDirectory, "packages", "auth-app"),
     exports: [
@@ -39,8 +47,8 @@ const packages = [
       "handlers",
     ],
     peers: {
-      "@gasboost/app": "^5.0.0",
-      "@gasboost/auth": "^0.5.0",
+      "@gasboost/app": "^5.2.0",
+      "@gasboost/auth": "^0.6.0",
     },
   },
   {
@@ -177,9 +185,10 @@ try {
         name: "auth-pack-smoke",
         private: true,
         dependencies: {
-          "@gasboost/app": "^5.0.0",
+          "@gasboost/app": "^5.2.0",
           "@gasboost/auth": `file:${tarballs.get("@gasboost/auth")}`,
           "@gasboost/auth-app": `file:${tarballs.get("@gasboost/auth-app")}`,
+          "@gasboost/auth-client": `file:${tarballs.get("@gasboost/auth-client")}`,
           "@gasboost/auth-realtime-firebase": `file:${tarballs.get(
             "@gasboost/auth-realtime-firebase",
           )}`,
@@ -209,7 +218,7 @@ try {
     packages
       .map(
         (packageMetadata) => `{
-  const actual = require("${packageMetadata.name}");
+  const actual = ${packageMetadata.exports.length ? `require("${packageMetadata.name}")` : "{}"};
   for (const exportName of ${JSON.stringify(packageMetadata.exports)}) {
     if (actual[exportName] === undefined) {
       throw new Error("${packageMetadata.name} missing export " + exportName);
@@ -252,7 +261,14 @@ try {
 
   writeFileSync(
     join(consumerDirectory, "index.ts"),
-    `import {
+    `import { AppsScript, type InferAppsScript } from "@gasboost/app";
+import {
+  AUTH_METADATA_KEY,
+  isAuthMetadata,
+  type AuthMetadata,
+} from "@gasboost/auth-client/metadata";
+
+import {
   AppsScriptAuth,
   createAuthTables,
 } from "@gasboost/auth";
@@ -316,7 +332,18 @@ new AppsScriptAuth({
   },
 });
 
-authentication({} as never);
+const metadata = {
+  [AUTH_METADATA_KEY]: { token: "session-id" } satisfies AuthMetadata,
+};
+isAuthMetadata(metadata[AUTH_METADATA_KEY]);
+const app = new AppsScript()
+  .use(authentication({} as never))
+  .call("updateProfile", (input: { name: string }, context) => ({
+    name: input.name,
+    userId: context.state.get("session").userId,
+  }));
+const input: InferAppsScript<typeof app>["updateProfile"]["input"] = { name: "Taro" };
+void app.dispatch("updateProfile", input, metadata);
 void handlers;
 new FirebaseAuthHook({} as never);
 `,

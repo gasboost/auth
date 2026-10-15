@@ -1,0 +1,46 @@
+{
+  "name": "@gasboost/auth-client",
+  "version": "0.1.0",
+  "description": "Framework-independent auth metadata contract for Gasboost RPC clients.",
+  "keywords": [
+    "google-apps-script",
+    "gas",
+    "authentication",
+    "auth",
+    "middleware",
+    "rpc",
+    "typescript",
+    "gasboost"
+  ],
+  "license": "MIT",
+  "type": "commonjs",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    "./metadata": {
+      "types": "./dist/metadata.d.ts",
+      "default": "./dist/metadata.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gasboost/auth.git",
+    "directory": "packages/auth-client"
+  },
+  "bugs": {
+    "url": "https://github.com/gasboost/auth/issues"
+  },
+  "homepage": "https://github.com/gasboost/auth#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "format:fix": "prettier --write . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",
+    "lint": "eslint . --config ../../eslint.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
+  }
+}

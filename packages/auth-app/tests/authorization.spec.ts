@@ -1,3 +1,5 @@
+import { AUTH_METADATA_KEY } from "@gasboost/auth-client/metadata";
+
 import { AppsScript } from "@gasboost/app";
 import { describe, expect, it, vi } from "vitest";
 
@@ -62,8 +64,8 @@ describe("authorization", () => {
         };
       });
 
-    const response = await app.dispatch("updateProject", {
-      token: "session-1",
+    const response = await app.dispatch("updateProject", undefined, {
+      [AUTH_METADATA_KEY]: { token: "session-1" },
     });
 
     expect(can).toHaveBeenCalledWith("user-1", requirement);
@@ -102,8 +104,8 @@ describe("authorization", () => {
       });
 
     await expect(
-      app.dispatch("deleteProject", {
-        token: "session-1",
+      app.dispatch("deleteProject", undefined, {
+        [AUTH_METADATA_KEY]: { token: "session-1" },
       }),
     ).rejects.toThrow("Forbidden");
   });

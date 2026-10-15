@@ -1,5 +1,9 @@
 import type { AppsScriptMiddleware } from "@gasboost/app";
 import type { AppsScriptAuth } from "@gasboost/auth";
+import {
+  AUTH_METADATA_KEY,
+  isAuthMetadata,
+} from "@gasboost/auth-client/metadata";
 
 import type { AuthState } from "./AuthState";
 
@@ -11,18 +15,18 @@ export function authentication(
       return next();
     }
 
-    const input = context.invocation.input;
+    const metadata = context.invocation.metadata;
+    const authMetadata =
+      metadata &&
+      Object.prototype.hasOwnProperty.call(metadata, AUTH_METADATA_KEY)
+        ? metadata[AUTH_METADATA_KEY]
+        : undefined;
 
-    if (
-      typeof input !== "object" ||
-      input === null ||
-      !("token" in input) ||
-      typeof input.token !== "string"
-    ) {
+    if (!isAuthMetadata(authMetadata)) {
       throw new Error("Unauthorized");
     }
 
-    const session = await auth.session.get(input.token);
+    const session = await auth.session.get(authMetadata.token);
 
     if (session === null) {
       throw new Error("Unauthorized");
