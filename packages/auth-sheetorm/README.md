@@ -1,5 +1,7 @@
 # @gasboost/auth-sheetorm
 
+`0.3.1` は `@gasboost/auth` の `^0.5.0 || ^0.6.0 || ^0.7.0` をpeer依存として受け入れます。
+
 `@gasboost/auth` の Repository を `@gasboost/sheetorm` で実装する adapter package です。
 認証テーブルの論理定義は `@gasboost/auth`、`SheetTable` への具体化は application の Backend が担当します。
 

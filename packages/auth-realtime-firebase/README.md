@@ -1,5 +1,8 @@
 # @gasboost/auth-realtime-firebase
 
+`0.1.2` は `@gasboost/auth@0.7.0` と組み合わせるリリースです。
+Sign In / Sign Up 共通の `afterSignIn` に接続できます。
+
 Firebase Authentication integration adapter for `@gasboost/auth`.
 
 `@gasboost/auth` の認証 lifecycle と、`@gasboost/realtime-firebase` の Firebase Custom Token generation を接続します。
