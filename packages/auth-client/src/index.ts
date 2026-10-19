@@ -7,6 +7,10 @@ export {
   type BrowserAuthStorageOptions,
   type BrowserTokenStorage,
 } from "./core/AuthStorage";
-export { authClient, type AuthClient } from "./client/authClient";
+export {
+  authClient,
+  type AuthClient,
+  type AuthClientHooks,
+} from "./client/authClient";
 export type { AuthRemote } from "./client/AuthRemote";
 export type { AuthSession, AuthState, AuthListener } from "./client/types";

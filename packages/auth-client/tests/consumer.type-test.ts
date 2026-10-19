@@ -52,3 +52,40 @@ function disabledConsumer() {
 
 void enabledConsumer;
 void disabledConsumer;
+
+function hookConsumer() {
+  const { client } = appsScriptClient<
+    import("../../auth-app/tests/consumer/hooks.type-test").HookApp
+  >({});
+  const auth = appsScriptAuth({
+    client,
+    storage: memoryAuthStorage(),
+    hooks: {
+      afterSignIn: async ({ hooks, token, user }) => {
+        const customToken: string = hooks.customToken;
+        const sessionToken: string = token;
+        const name: string = user.name;
+        // @ts-expect-error inferred hook result is string
+        const invalid: number = hooks.customToken;
+        void [customToken, sessionToken, name, invalid];
+      },
+    },
+  });
+  async function results() {
+    const signedIn = await auth.signIn({ email: "user", password: "password" });
+    const signedUp = await auth.signUp({
+      name: "Taro",
+      email: "user",
+      password: "password",
+    });
+    const appsScript = await auth.signUpAppsScript({ name: "Taro" });
+    const tokens: string[] = [
+      signedIn.hooks.customToken,
+      signedUp.hooks.customToken,
+      appsScript.hooks.customToken,
+    ];
+    return tokens;
+  }
+  void results;
+}
+void hookConsumer;

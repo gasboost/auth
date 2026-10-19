@@ -339,7 +339,8 @@ Session 発行
 
 `@gasboost/auth` は、認証成功後に外部処理を実行するための lifecycle hook を提供します。
 
-現在は `afterSignIn` を利用できます。
+現在は `afterSignIn` を利用できます。Sign In と、Session を自動発行する Sign Up の
+email / Apps Script 両経路で、Session 保存後に同じ Hook を1回 await します。
 
 ```ts
 import { AppsScriptAuth, type EmailPasswordAuthOptions } from "@gasboost/auth";
@@ -384,7 +385,7 @@ hooks: {
 },
 ```
 
-hook の戻り値は Sign In result の `hooks` から取得できます。
+hook の戻り値は Sign In / Sign Up result の `hooks` から取得できます。
 
 ```ts
 const result = await auth.signIn.email({
@@ -409,7 +410,7 @@ const auth = new AppsScriptAuth<EmailPasswordAuthOptions, HookResult>({
 });
 ```
 
-hook を設定しない場合、従来どおり Sign In result は `user` と `session` のみを返します。
+hook を設定しない場合、従来どおり Sign In / Sign Up result は `user` と `session` のみを返します。
 
 ```ts
 const auth = new AppsScriptAuth({
@@ -448,7 +449,7 @@ hooks: {
 
 ### Hook Failure
 
-`afterSignIn` は Sign In 処理の一部として扱われます。
+`afterSignIn` は Sign In / Sign Up 処理の一部として扱われます。
 
 処理順序は以下です。
 
@@ -466,9 +467,11 @@ afterSignIn
 Sign In result
 ```
 
-`afterSignIn` で例外が発生した場合、Sign In 全体が失敗します。
+`afterSignIn` で例外が発生した場合、Sign In / Sign Up 全体が失敗します。
 
 その際、すでに保存された Session は SessionStorage から削除されます。
+削除が失敗しても元の Hook エラーを返します。Sign Up で作成済みの User / Account は削除しません。
+登録は完了しているため、再認証には Sign In を使い、Sign Up を自動再試行しないでください。
 
 ```text
 afterSignIn error

@@ -59,7 +59,7 @@ const packages = [
     ],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth": "^0.6.0",
+      "@gasboost/auth": "^0.6.0 || ^0.7.0",
     },
   },
   {
@@ -67,7 +67,7 @@ const packages = [
     directory: join(rootDirectory, "packages", "auth-sheetorm"),
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
-      "@gasboost/auth": "^0.5.0",
+      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0",
       "@gasboost/sheetorm": "^3.1.0",
     },
   },
@@ -187,6 +187,18 @@ try {
       packageName: packageMetadata.name,
       peers: packageMetadata.peers,
     });
+  }
+
+  // Overrides route unpublished packages to tarballs; verify the actual public
+  // dependency contract before overrides can hide an incompatible auth version.
+  const packedAuth = readPackedPackageJson(tarballs.get("@gasboost/auth"));
+  const packedFirebase = readPackedPackageJson(
+    tarballs.get("@gasboost/auth-realtime-firebase"),
+  );
+  if (packedFirebase.dependencies?.["@gasboost/auth"] !== packedAuth.version) {
+    throw new Error(
+      `Firebase adapter must depend on packed auth ${packedAuth.version}`,
+    );
   }
 
   writeFileSync(
@@ -337,7 +349,13 @@ const repository =
     schema: definitions.schema,
   });
 
+const firebaseHook = new FirebaseAuthHook({
+  serviceAccount: { email: "service@example.com", privateKey: "server-only-key" },
+  utilities: {} as never,
+});
+
 const serverAuth = new AppsScriptAuth({
+  hooks: { afterSignIn: firebaseHook.afterSignIn },
   appsScript: {
     enabled: true,
     isSignupEnabled: true,
@@ -374,7 +392,22 @@ const storage: AuthStorage = memoryAuthStorage();
 const { client } = appsScriptClient<InferAppsScript<typeof app>>({
   metadataProviders: [authMetadataProvider(storage)],
 });
-const auth = appsScriptAuth({ client, storage });
+const auth = appsScriptAuth({ client, storage, hooks: {
+  afterSignIn: async ({ hooks }) => {
+    const customToken: string = hooks.customToken;
+    // @ts-expect-error Firebase hook result remains string through the RPC client
+    const invalid: number = hooks.customToken;
+    void [customToken, invalid];
+  },
+} });
+async function hookResults() {
+  const signedIn = await auth.signIn({ email: "user@example.com", password: "password" });
+  const signedUp = await auth.signUp({ name: "Taro", email: "user@example.com", password: "password" });
+  const appsScript = await auth.signUpAppsScript({ name: "Taro" });
+  const tokens: string[] = [signedIn.hooks.customToken, signedUp.hooks.customToken, appsScript.hooks.customToken];
+  return tokens;
+}
+void hookResults;
 void auth.signIn({ email: "user@example.com", password: "password" });
 void auth.signInAppsScript();
 void auth.signUp({ name: "Taro", email: "user@example.com", password: "password" });
@@ -390,11 +423,10 @@ const remote: AuthRemote<{ token: string; user: null }, { email: string }, { nam
 };
 authClient({ remote, storage });
 authCore({ storage });
-new FirebaseAuthHook({} as never);
 `,
   );
 
-  run("pnpm", ["install"], {
+  run("pnpm", ["install", "--strict-peer-dependencies"], {
     cwd: consumerDirectory,
   });
 

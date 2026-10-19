@@ -45,10 +45,15 @@ function setup() {
     },
     signUp: {
       email: vi.fn(
-        async (_input: { name: string; email: string; password: string }) =>
-          signIn(),
+        async (_input: { name: string; email: string; password: string }) => ({
+          ...signIn(),
+          hooks: { customToken: "custom" },
+        }),
       ),
-      appsScript: vi.fn(async (_input: { name: string }) => signIn()),
+      appsScript: vi.fn(async (_input: { name: string }) => ({
+        ...signIn(),
+        hooks: { customToken: "custom" },
+      })),
     },
     session: { get: vi.fn(async (id: string) => sessions.get(id) ?? null) },
     signOut: {
@@ -237,5 +242,116 @@ describe("appsScriptAuth with real RPC client, handlers, and middleware", () => 
     });
     await remote.signOut(session.token);
     expect(await remote.getSession(session.token)).toBeNull();
+  });
+});
+
+describe("consumer authentication hooks", () => {
+  it.each([
+    "signIn",
+    "signUp",
+    "signInAppsScript",
+    "signUpAppsScript",
+  ] as const)(
+    "awaits the hook once for %s and persists only the session id",
+    async (method) => {
+      const { client, storage } = setup();
+      let release!: () => void;
+      let started!: () => void;
+      const entered = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      const pending = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const afterSignIn = vi.fn(
+        async ({ hooks }: { hooks: { customToken: string } }) => {
+          expect(hooks.customToken).toBe("custom");
+          started();
+          await pending;
+        },
+      );
+      const auth = appsScriptAuth({ client, storage, hooks: { afterSignIn } });
+      const result =
+        method === "signInAppsScript"
+          ? auth.signInAppsScript()
+          : method === "signUpAppsScript"
+            ? auth.signUpAppsScript({ name: "Taro" })
+            : auth[method]({
+                name: "Taro",
+                email: "user",
+                password: "password",
+              });
+      await entered;
+      expect(storage.get()).toBeNull();
+      expect(auth.getState().isAuthenticated).toBe(false);
+      release();
+      const session = await result;
+      expect(afterSignIn).toHaveBeenCalledExactlyOnceWith(session);
+      expect(session.hooks.customToken).toBe("custom");
+      expectTypeOf(session.hooks.customToken).toEqualTypeOf<string>();
+      expect(storage.get()).toBe(session.session.id);
+    },
+  );
+
+  it.each(["signIn", "signUp"] as const)(
+    "revokes the server session when the %s consumer hook fails",
+    async (method) => {
+      const { client, storage, sessions, server } = setup();
+      const error = new Error("Firebase sign-in failed");
+      const auth = appsScriptAuth({
+        client,
+        storage,
+        hooks: {
+          afterSignIn: async () => {
+            throw error;
+          },
+        },
+      });
+      await expect(
+        auth[method]({ name: "Taro", email: "user", password: "password" }),
+      ).rejects.toBe(error);
+      expect(sessions.size).toBe(0);
+      expect(server.signOut.execute).toHaveBeenCalledOnce();
+      expect(server[method].email).toHaveBeenCalledOnce();
+      expect(storage.get()).toBeNull();
+      expect(auth.getState().isAuthenticated).toBe(false);
+    },
+  );
+
+  it("runs a consumer hook with a server that has no hook result", async () => {
+    const { client, storage } = setup();
+    const plainClient = {
+      ...client,
+      signInEmail: async (_input: { email: string; password: string }) => ({
+        user: null,
+        session: { id: "plain" },
+      }),
+      signInAppsScript: async (_input: Record<string, never>) => ({
+        user: null,
+        session: { id: "plain" },
+      }),
+      signUpEmail: async (_input: {
+        name: string;
+        email: string;
+        password: string;
+      }) => ({ user: null, session: { id: "plain" } }),
+      signUpAppsScript: async (_input: { name: string }) => ({
+        user: null,
+        session: { id: "plain" },
+      }),
+    };
+    const afterSignIn = vi.fn();
+    const auth = appsScriptAuth({
+      client: plainClient,
+      storage,
+      hooks: { afterSignIn },
+    });
+    const result = await auth.signUp({
+      name: "Taro",
+      email: "user",
+      password: "password",
+    });
+    expect(result).not.toHaveProperty("hooks");
+    expect(afterSignIn).toHaveBeenCalledExactlyOnceWith(result);
   });
 });

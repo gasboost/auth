@@ -162,6 +162,11 @@ Password Reset が有効な場合は、さらに以下も公開されます。
 
 `signIn` / `signUp` / Password Reset の input と result の型は `@gasboost/auth` の既存 API から推論されます。
 
+`@gasboost/auth@^0.7.0` で `afterSignIn` を設定すると、Sign In / Sign Up の
+email / Apps Script 全 RPC に `hooks` の戻り値型が伝播します。
+`@gasboost/auth-client` の Consumer Hook も、その RPC 型から結果を推論します。
+Firebase の接続例は [auth-client README](../auth-client/README.md#consumer-hookfirebase-の例) を参照してください。
+
 `getSession` と `signOut` は、RPC の単一 object input contract に合わせて以下の形式になります。
 
 ```ts

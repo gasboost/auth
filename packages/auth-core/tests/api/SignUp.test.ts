@@ -48,6 +48,7 @@ describe("SignUp", () => {
 
     expect(registration.register).toHaveBeenCalledWith(input);
 
+    expect(result).not.toHaveProperty("hooks");
     expect(result.user).toBe(user);
     expect(result.session.id).toBe("session-1");
     expect(result.session.userId).toBe("user-1");
@@ -118,4 +119,42 @@ describe("SignUp", () => {
 
     await expect(signUp.execute({})).rejects.toThrow("Storage failed");
   });
+  it.each([false, true])(
+    "preserves hook errors and rolls back only the session (delete fails: %s)",
+    async (deleteFails) => {
+      const error = new Error("Hook failed");
+      const user = new User({ id: "user-1", name: "Taro", accounts: [] });
+      const registration = { register: vi.fn().mockResolvedValue(user) };
+      const sessionStorage = {
+        save: vi.fn(),
+        get: vi.fn(),
+        cleanupExpired: vi.fn(),
+        delete: deleteFails
+          ? vi.fn().mockRejectedValue(new Error("Delete failed"))
+          : vi.fn(),
+      };
+      const afterSignIn = vi.fn(async () => {
+        throw error;
+      });
+      const signUp = new SignUp({
+        registration,
+        sessionStorage,
+        afterSignIn,
+        expiresIn: 1000,
+        utilities: {
+          getUuid: () => "session-1",
+        } as GoogleAppsScript.Utilities.Utilities,
+      });
+      await expect(signUp.execute({})).rejects.toBe(error);
+      expect(afterSignIn).toHaveBeenCalledOnce();
+      expect(afterSignIn).toHaveBeenCalledWith({
+        user,
+        session: sessionStorage.save.mock.calls[0]![0],
+      });
+      expect(sessionStorage.delete).toHaveBeenCalledExactlyOnceWith(
+        "session-1",
+      );
+      expect(registration.register).toHaveBeenCalledOnce();
+    },
+  );
 });
