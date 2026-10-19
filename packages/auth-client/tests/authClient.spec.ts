@@ -245,3 +245,90 @@ describe("authClient", () => {
     expect(storage.get()).toBe(second.token);
   });
 });
+
+describe("authClient hook failure and concurrency", () => {
+  it.each(["signIn", "signUp"] as const)(
+    "revokes a failed %s session without retrying or replacing previous state",
+    async (method) => {
+      const { remote, storage } = setup();
+      const error = new Error("Consumer hook failed");
+      const afterSignIn = vi.fn();
+      const auth = authClient({ remote, storage, hooks: { afterSignIn } });
+      await auth.signIn({ email: "first" });
+      remote.signIn.mockResolvedValue(second);
+      afterSignIn.mockRejectedValue(error);
+      remote.signOut.mockRejectedValue(new Error("Revocation failed"));
+      const result =
+        method === "signIn"
+          ? auth.signIn({ email: "next" })
+          : auth.signUp({ name: "next" });
+      await expect(result).rejects.toBe(error);
+      expect(remote.signOut).toHaveBeenCalledExactlyOnceWith(second.token);
+      expect(remote[method]).toHaveBeenCalledTimes(method === "signIn" ? 2 : 1);
+      expect(auth.getSession()).toBe(first);
+      expect(storage.get()).toBe(first.token);
+    },
+  );
+
+  it.each(["signOut", "signIn", "restoreSession"] as const)(
+    "a delayed consumer hook cannot overwrite a newer %s",
+    async (method) => {
+      const { remote, storage } = setup();
+      const pending = deferred<void>();
+      const entered = deferred<void>();
+      const afterSignIn = vi.fn(async () => {
+        entered.resolve();
+        await pending.promise;
+      });
+      const auth = authClient({ remote, storage, hooks: { afterSignIn } });
+      const signup = auth.signUp({ name: "old" });
+      await entered.promise;
+      afterSignIn.mockResolvedValue(undefined);
+      if (method === "signOut") await auth.signOut();
+      else if (method === "signIn") await auth.signIn({ email: "new" });
+      else {
+        storage.set(first.token);
+        await auth.restoreSession();
+      }
+      pending.resolve();
+      await signup;
+      expect(auth.getSession()).toBe(method === "signOut" ? null : first);
+      expect(storage.get()).toBe(method === "signOut" ? null : first.token);
+    },
+  );
+
+  it("a stale RPC result skips the consumer hook", async () => {
+    const { remote, storage } = setup();
+    const pending = deferred<Session>();
+    remote.signUp.mockReturnValue(pending.promise);
+    const afterSignIn = vi.fn();
+    const auth = authClient({ remote, storage, hooks: { afterSignIn } });
+    const signup = auth.signUp({ name: "old" });
+    await auth.signIn({ email: "new" });
+    pending.resolve(second);
+    expect(await signup).toBe(second);
+    expect(afterSignIn).toHaveBeenCalledExactlyOnceWith(first);
+    expect(auth.getSession()).toBe(first);
+  });
+
+  it("a stale failing hook revokes only its own session and preserves newer state", async () => {
+    const { remote, storage } = setup();
+    const pending = deferred<void>();
+    const entered = deferred<void>();
+    const afterSignIn = vi.fn(async () => {
+      entered.resolve();
+      await pending.promise;
+    });
+    const auth = authClient({ remote, storage, hooks: { afterSignIn } });
+    const signup = auth.signUp({ name: "old" });
+    await entered.promise;
+    afterSignIn.mockResolvedValue(undefined);
+    await auth.signIn({ email: "new" });
+    const error = new Error("Old hook failed");
+    pending.reject(error);
+    await expect(signup).rejects.toBe(error);
+    expect(remote.signOut).toHaveBeenCalledExactlyOnceWith(second.token);
+    expect(auth.getSession()).toBe(first);
+    expect(storage.get()).toBe(first.token);
+  });
+});

@@ -10,7 +10,7 @@ pnpm add @gasboost/auth-client @gasboost/client
 ```
 
 Apps Script adapter は `@gasboost/client@^0.5.0` の metadata pipeline と互換です。
-backend は `@gasboost/auth-app@^0.4.1` と `@gasboost/app@^5.2.0` を使用します。
+backend は `@gasboost/auth-app@^0.6.0` と `@gasboost/app@^5.2.0` を使用します。
 root と `/metadata` は RPC client や browser globals を使わず import できます。
 
 ## Apps Script consumer
@@ -51,6 +51,75 @@ provider は RPC 実行時に storage を読み、
 token がない場合や空白のみの場合は metadata を返しません。
 業務 input に token を追加したり、認証対象 RPC 名を列挙したりする必要はありません。
 backend の公開 auth RPC は `authentication(auth)` より前に登録します。
+
+## Consumer Hook（Firebase の例）
+
+backend で Firebase Custom Token を返す設定にします。`repository` / `runtime` /
+`sessionConfig` / `emailPasswordOptions` は既存のサーバー設定です。
+
+```ts
+import { AppsScriptAuth } from "@gasboost/auth";
+import { handlers } from "@gasboost/auth-app";
+import { FirebaseAuthHook } from "@gasboost/auth-realtime-firebase";
+
+const firebaseHook = new FirebaseAuthHook({
+  serviceAccount: { email: serviceAccountEmail, privateKey },
+  utilities: Utilities,
+});
+const auth = new AppsScriptAuth({
+  repository,
+  runtime,
+  session: sessionConfig,
+  emailPassword: emailPasswordOptions,
+  hooks: { afterSignIn: firebaseHook.afterSignIn },
+});
+// 既存の AppsScript app へ登録し、その型を frontend に渡します。
+app.calls(handlers(auth));
+```
+
+frontend は上記 app の型で作成した `client` と共有 `storage` を使用します。
+明示的な型引数やキャストなしで、RPC の戻り値から `hooks` を推論します。
+
+```ts
+import { appsScriptAuth } from "@gasboost/auth-client/appsscript";
+import { signInWithCustomToken } from "firebase/auth";
+
+export const auth = appsScriptAuth({
+  client,
+  storage,
+  hooks: {
+    afterSignIn: async ({ hooks }) => {
+      await signInWithCustomToken(firebaseAuth, hooks.customToken);
+    },
+  },
+});
+
+const signedUp = await auth.signUp({ name, email, password });
+signedUp.hooks.customToken; // string
+const signedIn = await auth.signIn({ email, password });
+signedIn.hooks.customToken; // string
+```
+
+同じ Consumer Hook を Sign In / Sign Up（email / Apps Script）の両方で1回 await し、
+成功後に token を保存して state を通知します。引数は `{ user, session, token, hooks }` 等の
+認証結果全体です。サーバー Hook がない場合は `hooks` プロパティもなく、Consumer Hook 自体は実行できます。
+Consumer Hook 未指定時は従来どおり動作します。`authClient({ remote, storage, hooks })` でも
+同じ汎用 Hook を利用できます。
+
+Consumer Hook 失敗時は今回発行された session の `remote.signOut(token)` を await し、
+元の Hook エラーで認証 Promise を reject します。既存の local state / storage は維持します。
+失効 RPC 自体が失敗した場合も元のエラーを返し、サーバー Session が残る可能性があります。
+呼び出し元はエラーを表示し、必要に応じて再認証してください。Sign Up RPC は自動再実行しません。
+登録済み User / Account は残るので、再認証には Sign In を使ってください。
+Consumer が開始した外部 SDK の副作用は自動で取り消せません。
+
+RPC 完了時点で新しい認証操作が始まっていれば古い Consumer Hook は実行しません。
+Hook 待機中に新しい操作が始まった場合も、完了後に古い結果で state を上書きしません。
+`restoreSession` / `signOut` では Hook を実行しません。
+
+永続 storage に保存するのは `session.id` のみです。Custom Token は Consumer の Firebase SDK に渡し、
+永続化しないでください。Firebase SDK は Consumer が依存を追加します。
+Service Account の秘密鍵は backend にのみ置き、ブラウザへ配布しないでください。
 
 ## Lifecycle
 

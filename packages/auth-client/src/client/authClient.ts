@@ -3,6 +3,10 @@ import type { AuthStorage } from "../core/AuthStorage";
 import type { AuthRemote } from "./AuthRemote";
 import type { AuthSession } from "./types";
 
+export type AuthClientHooks<TResult extends AuthSession> = {
+  afterSignIn?: (result: TResult) => void | Promise<void>;
+};
+
 export function authClient<
   TSession extends AuthSession,
   TSignInInput,
@@ -12,6 +16,7 @@ export function authClient<
 >({
   remote,
   storage,
+  hooks,
 }: {
   remote: AuthRemote<
     TSession,
@@ -21,18 +26,32 @@ export function authClient<
     TSignUpSession
   >;
   storage: AuthStorage;
+  hooks?: AuthClientHooks<TSignInSession | TSignUpSession>;
 }) {
   const core = authCore<TSession | TSignInSession | TSignUpSession>({
     storage,
   });
   let revision = 0;
 
-  async function authenticate<TResult extends AuthSession>(
+  async function authenticate<TResult extends TSignInSession | TSignUpSession>(
     operation: () => Promise<TResult>,
     commit: (session: TResult) => void,
   ): Promise<TResult> {
     const current = ++revision;
     const session = await operation();
+    if (current !== revision) return session;
+    if (hooks?.afterSignIn) {
+      try {
+        await hooks.afterSignIn(session);
+      } catch (error) {
+        try {
+          await remote.signOut(session.token);
+        } catch {
+          // Preserve the consumer hook error even if revocation fails.
+        }
+        throw error;
+      }
+    }
     if (current === revision) commit(session);
     return session;
   }

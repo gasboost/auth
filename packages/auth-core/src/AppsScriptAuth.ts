@@ -53,7 +53,7 @@ export class AppsScriptAuth<
 > {
   public readonly signIn: AppsScriptAuthSignIn<THookResult>;
 
-  public readonly signUp: AppsScriptAuthSignUp;
+  public readonly signUp: AppsScriptAuthSignUp<THookResult>;
 
   public readonly session: AppsScriptAuthSession;
 
@@ -101,7 +101,8 @@ export class AppsScriptAuth<
         : {}),
     });
 
-    this.signUp = new AppsScriptAuthSignUp({
+    this.signUp = new AppsScriptAuthSignUp<THookResult>({
+      afterSignIn: hooks?.afterSignIn,
       sessionStorage,
       expiresIn,
       repository,

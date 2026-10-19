@@ -1,5 +1,6 @@
 import type { AppsScriptAuthenticationConfig } from "../authentication/AppsScriptAuthentication";
 import type { EmailPasswordAuthConfig } from "../authentication/EmailPasswordAuthentication";
+import type { AfterSignInHook } from "../hooks/AuthHooks";
 import {
   AppsScriptRegistration,
   type AppsScriptRegistrationInput,
@@ -12,13 +13,17 @@ import type { AppsScriptAuthRepository } from "../storage/AppsScriptAuthReposito
 import type { AppsScriptSessionStorage } from "../storage/AppsScriptSessionStorage";
 import { SignUp } from "./SignUp";
 
-export class AppsScriptAuthSignUp {
-  public email: SignUp<EmailPasswordRegistrationInput>["execute"];
-  public appsScript: SignUp<AppsScriptRegistrationInput>["execute"];
+export class AppsScriptAuthSignUp<THookResult = undefined> {
+  public email: SignUp<EmailPasswordRegistrationInput, THookResult>["execute"];
+  public appsScript: SignUp<
+    AppsScriptRegistrationInput,
+    THookResult
+  >["execute"];
 
   constructor({
     sessionStorage,
     expiresIn,
+    afterSignIn,
     repository,
     emailPassword,
     appsScript,
@@ -27,6 +32,7 @@ export class AppsScriptAuthSignUp {
   }: {
     sessionStorage: AppsScriptSessionStorage;
     expiresIn: number;
+    afterSignIn?: AfterSignInHook<THookResult>;
     repository: AppsScriptAuthRepository;
     emailPassword?: EmailPasswordAuthConfig;
     appsScript?: AppsScriptAuthenticationConfig;
@@ -42,6 +48,7 @@ export class AppsScriptAuthSignUp {
 
       const emailSignUp = new SignUp({
         sessionStorage,
+        afterSignIn,
         expiresIn,
         registration: new EmailPasswordRegistration(
           repository,
@@ -63,6 +70,7 @@ export class AppsScriptAuthSignUp {
 
       const appsScriptSignUp = new SignUp({
         sessionStorage,
+        afterSignIn,
         expiresIn,
         registration: new AppsScriptRegistration(
           utilities,

@@ -9,6 +9,7 @@ import {
 import { NodeUtilities } from "@gasboost/fake-node";
 import { describe, expect, it, vi } from "vitest";
 
+import type { AfterSignInContext } from "../src/hooks/AuthHooks";
 import { AppsScriptAuthRegistration } from "../src/api/AppsScriptAuthRegistration";
 import { AppsScriptAuth } from "../src/AppsScriptAuth";
 import type { AppsScriptAuthRepository } from "../src/storage/AppsScriptAuthRepository";
@@ -292,4 +293,53 @@ describe("AppsScriptAuth", () => {
     expect(user.accounts[0].identity.accountId).toBe("taro@example.com");
     expect(repository.user.create).toHaveBeenCalledWith(user);
   });
+  it.each(["email", "appsScript"] as const)(
+    "awaits the shared hook once after %s signup is saved",
+    async (provider) => {
+      const repository = createRepository();
+      let release!: () => void;
+      const pending = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      let started!: () => void;
+      const entered = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      const afterSignIn = vi.fn(
+        async ({ user, session }: AfterSignInContext) => {
+          expect(repository.user.create).toHaveBeenCalledWith(user);
+          expect(await auth.session.get(session.id)).not.toBeNull();
+          started();
+          await pending;
+          return { customToken: "custom" };
+        },
+      );
+      const auth = new AppsScriptAuth({
+        repository,
+        runtime: createRuntime(),
+        session: { storageType: "cache" },
+        emailPassword: {
+          enabled: true,
+          isSignupEnabled: true,
+          pepper: "pepper",
+        },
+        appsScript: { enabled: true, isSignupEnabled: true },
+        hooks: { afterSignIn },
+      });
+      let settled = false;
+      const result = auth.signUp[provider]({
+        name: "Taro",
+        email: "user@example.com",
+        password: "password",
+      });
+      void result.then(() => {
+        settled = true;
+      });
+      await entered;
+      expect(settled).toBe(false);
+      release();
+      expect((await result).hooks.customToken).toBe("custom");
+      expect(afterSignIn).toHaveBeenCalledOnce();
+    },
+  );
 });

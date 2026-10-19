@@ -1,4 +1,4 @@
-import { authClient } from "../client/authClient";
+import { authClient, type AuthClientHooks } from "../client/authClient";
 import type { AuthStorage } from "../core/AuthStorage";
 import {
   appsScriptAuthRemote,
@@ -8,13 +8,26 @@ import {
 export function appsScriptAuth<TClient extends AppsScriptAuthRpc>({
   client,
   storage,
+  hooks,
 }: {
   client: TClient;
   storage: AuthStorage;
+  hooks?: AuthClientHooks<
+    {
+      [
+        K in
+          | "signInEmail"
+          | "signInAppsScript"
+          | "signUpEmail"
+          | "signUpAppsScript"
+      ]: Awaited<ReturnType<TClient[K]>> & { token: string };
+    }["signInEmail" | "signInAppsScript" | "signUpEmail" | "signUpAppsScript"]
+  >;
 }) {
   const auth = authClient({
     remote: appsScriptAuthRemote({ client }),
     storage,
+    hooks,
   });
   return {
     ...auth,
