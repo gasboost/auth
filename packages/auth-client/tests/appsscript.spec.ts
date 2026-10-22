@@ -355,3 +355,41 @@ describe("consumer authentication hooks", () => {
     expect(afterSignIn).toHaveBeenCalledExactlyOnceWith(result);
   });
 });
+
+describe("Apps Script external authentication lifecycle", () => {
+  it("infers restored RPC session data and preserves GAS auth on external mismatch", async () => {
+    const { client, storage, sessions, server } = setup();
+    const afterSignIn = vi.fn();
+    const afterSignOut = vi.fn();
+    const auth = appsScriptAuth({
+      client,
+      storage,
+      hooks: {
+        afterSignIn,
+        sync: (restored) => {
+          if (restored) {
+            expectTypeOf(restored.session.userId).toEqualTypeOf<string>();
+            expect(restored.session.userId).toBe("user-1");
+            expect(restored.user).toBeNull();
+          }
+          return false;
+        },
+        afterSignOut,
+      },
+    });
+    const signedIn = await auth.signIn({ email: "user", password: "password" });
+    afterSignIn.mockClear();
+    const result = await auth.sync();
+    expect(result.synchronized).toBe(false);
+    expect(result.session?.session.userId).toBe("user-1");
+    expect(storage.get()).toBe(signedIn.token);
+    expect(auth.getState().isAuthenticated).toBe(true);
+    expect(sessions.has(signedIn.token)).toBe(true);
+    expect(server.signOut.execute).not.toHaveBeenCalled();
+    expect(afterSignIn).not.toHaveBeenCalled();
+    expect(afterSignOut).not.toHaveBeenCalled();
+    await auth.signOut();
+    expect(sessions.has(signedIn.token)).toBe(false);
+    expect(afterSignOut).toHaveBeenCalledExactlyOnceWith();
+  });
+});

@@ -18,6 +18,7 @@ function enabledConsumer() {
   void auth.signUpAppsScript({ name: "Taro" });
   void auth.signOut();
   void auth.restoreSession();
+  void auth.sync();
   void client.forgotPassword({ email: "user" });
   void client.resetPassword({ token: "token", newPassword: "password" });
 
@@ -69,6 +70,19 @@ function hookConsumer() {
         const invalid: number = hooks.customToken;
         void [customToken, sessionToken, name, invalid];
       },
+      sync: (restored) => {
+        if (restored === null) return true;
+        const userId: string = restored.session.userId;
+        const token: string = restored.token;
+        const user: null = restored.user;
+        // @ts-expect-error getSession does not return sign-in hook data
+        void restored.hooks;
+        // @ts-expect-error RPC userId is a string
+        const invalid: number = restored.session.userId;
+        void [userId, token, user, invalid];
+        return true;
+      },
+      afterSignOut: async () => {},
     },
   });
   async function results() {
@@ -84,6 +98,10 @@ function hookConsumer() {
       signedUp.hooks.customToken,
       appsScript.hooks.customToken,
     ];
+    const synchronized = await auth.sync();
+    const success: boolean = synchronized.synchronized;
+    const userId: string | undefined = synchronized.session?.session.userId;
+    void [success, userId];
     return tokens;
   }
   void results;

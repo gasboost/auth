@@ -3,8 +3,13 @@ import type { AuthStorage } from "../core/AuthStorage";
 import type { AuthRemote } from "./AuthRemote";
 import type { AuthSession } from "./types";
 
-export type AuthClientHooks<TResult extends AuthSession> = {
+export type AuthClientHooks<
+  TResult extends AuthSession,
+  TSession extends AuthSession = TResult,
+> = {
   afterSignIn?: (result: TResult) => void | Promise<void>;
+  sync?: (session: TSession | null) => boolean | Promise<boolean>;
+  afterSignOut?: () => void | Promise<void>;
 };
 
 export function authClient<
@@ -26,12 +31,25 @@ export function authClient<
     TSignUpSession
   >;
   storage: AuthStorage;
-  hooks?: AuthClientHooks<TSignInSession | TSignUpSession>;
+  hooks?: AuthClientHooks<TSignInSession | TSignUpSession, TSession>;
 }) {
   const core = authCore<TSession | TSignInSession | TSignUpSession>({
     storage,
   });
   let revision = 0;
+
+  async function restoreSession(current: number): Promise<TSession | null> {
+    const token = storage.get();
+    if (token === null || token.trim().length === 0) {
+      core.setSession(null);
+      return null;
+    }
+    const session = await remote.getSession(token);
+    if (current === revision && storage.get() === token) {
+      core.setSession(session);
+    }
+    return session;
+  }
 
   async function authenticate<TResult extends TSignInSession | TSignUpSession>(
     operation: () => Promise<TResult>,
@@ -76,20 +94,21 @@ export function authClient<
       // A newer operation or another owner of this storage supersedes this one.
       if (current === revision && storage.get() === token) {
         core.setSession(null);
+        if (current === revision) await hooks?.afterSignOut?.();
       }
     },
-    async restoreSession(): Promise<TSession | null> {
+    restoreSession(): Promise<TSession | null> {
+      return restoreSession(++revision);
+    },
+    async sync(): Promise<{ session: TSession | null; synchronized: boolean }> {
       const current = ++revision;
-      const token = storage.get();
-      if (token === null || token.trim().length === 0) {
-        core.setSession(null);
-        return null;
-      }
-      const session = await remote.getSession(token);
-      if (current === revision && storage.get() === token) {
-        core.setSession(session);
-      }
-      return session;
+      const session = await restoreSession(current);
+      const isCurrent = () =>
+        current === revision && storage.get() === (session?.token ?? null);
+      // Do not start external work for a superseded restoration.
+      if (!isCurrent()) return { session, synchronized: false };
+      const synchronized = hooks?.sync ? await hooks.sync(session) : true;
+      return { session, synchronized: isCurrent() && synchronized };
     },
   };
 }

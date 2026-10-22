@@ -21,7 +21,14 @@ export function appsScriptAuth<TClient extends AppsScriptAuthRpc>({
           | "signUpEmail"
           | "signUpAppsScript"
       ]: Awaited<ReturnType<TClient[K]>> & { token: string };
-    }["signInEmail" | "signInAppsScript" | "signUpEmail" | "signUpAppsScript"]
+    }["signInEmail" | "signInAppsScript" | "signUpEmail" | "signUpAppsScript"],
+    NonNullable<
+      Awaited<
+        ReturnType<
+          ReturnType<typeof appsScriptAuthRemote<TClient>>["getSession"]
+        >
+      >
+    >
   >;
 }) {
   const auth = authClient({
