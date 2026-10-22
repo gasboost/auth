@@ -66,9 +66,13 @@ function setup() {
     undefined,
     { customToken: string }
   >;
+  const issueCustomToken = vi.fn((userId: string) => `custom:${userId}`);
   const app = new AppsScript()
     .calls(handlers(auth))
     .use(authentication(auth))
+    .call("issueFirebaseCustomToken", (_: Record<string, never>, context) => ({
+      customToken: issueCustomToken(context.state.get("session").userId),
+    }))
     .call(
       "createEmployee",
       (input: { name: string; email: string }, context) => ({
@@ -86,6 +90,7 @@ function setup() {
   });
   return {
     server,
+    issueCustomToken,
     sessions,
     storage,
     call,
@@ -357,39 +362,88 @@ describe("consumer authentication hooks", () => {
 });
 
 describe("Apps Script external authentication lifecycle", () => {
-  it("infers restored RPC session data and preserves GAS auth on external mismatch", async () => {
+  it("repairs external auth using the validated GAS user ID", async () => {
     const { client, storage, sessions, server } = setup();
-    const afterSignIn = vi.fn();
-    const afterSignOut = vi.fn();
+    let externalId: string | null = "other";
+    const externalAuth = {
+      getUserId: vi.fn(async () => externalId),
+      signIn: vi.fn(async (id: string) => {
+        externalId = id;
+      }),
+      signOut: vi.fn(async () => {
+        externalId = null;
+      }),
+    };
     const auth = appsScriptAuth({
       client,
       storage,
-      hooks: {
-        afterSignIn,
-        sync: (restored) => {
-          if (restored) {
-            expectTypeOf(restored.session.userId).toEqualTypeOf<string>();
-            expect(restored.session.userId).toBe("user-1");
-            expect(restored.user).toBeNull();
-          }
-          return false;
-        },
-        afterSignOut,
+      externalAuth,
+      getUserId: (result) => {
+        expectTypeOf(result.session.userId).toEqualTypeOf<string>();
+        return result.session.userId;
       },
     });
     const signedIn = await auth.signIn({ email: "user", password: "password" });
-    afterSignIn.mockClear();
+    expect(await auth.isSynced()).toBe(false);
     const result = await auth.sync();
-    expect(result.synchronized).toBe(false);
+    expect(result.synchronized).toBe(true);
     expect(result.session?.session.userId).toBe("user-1");
+    expect(externalAuth.signIn).toHaveBeenCalledExactlyOnceWith("user-1");
+    expect(await auth.isSynced()).toBe(true);
     expect(storage.get()).toBe(signedIn.token);
-    expect(auth.getState().isAuthenticated).toBe(true);
-    expect(sessions.has(signedIn.token)).toBe(true);
     expect(server.signOut.execute).not.toHaveBeenCalled();
-    expect(afterSignIn).not.toHaveBeenCalled();
-    expect(afterSignOut).not.toHaveBeenCalled();
     await auth.signOut();
     expect(sessions.has(signedIn.token)).toBe(false);
-    expect(afterSignOut).toHaveBeenCalledExactlyOnceWith();
+    expect(externalAuth.signOut).toHaveBeenCalledExactlyOnceWith();
+  });
+});
+
+describe("Consumer credential reissuance", () => {
+  it("repairs missing Firebase auth with credentials bound to the validated GAS session", async () => {
+    const { client, storage, issueCustomToken, auth: original, call } = setup();
+    const signedIn = await original.signIn({
+      email: "user",
+      password: "password",
+    });
+    let uid: string | null = null;
+    const auth = appsScriptAuth({
+      client,
+      storage,
+      getUserId: (result) => result.session.userId,
+      externalAuth: {
+        getUserId: async () => uid,
+        signIn: async () => {
+          const { customToken } = await client.issueFirebaseCustomToken({});
+          // Consumer SDK stand-in: a signed credential identifies the user.
+          uid = customToken.slice("custom:".length);
+        },
+        signOut: async () => {
+          uid = null;
+        },
+      },
+    });
+    expect((await auth.sync()).synchronized).toBe(true);
+    expect(uid).toBe("user-1");
+    expect(issueCustomToken).toHaveBeenCalledExactlyOnceWith("user-1");
+    // Malicious input cannot select the token subject; middleware supplies it.
+    const forged = await call(
+      "issueFirebaseCustomToken",
+      { userId: "attacker" },
+      {
+        [AUTH_METADATA_KEY]: { token: signedIn.token },
+      },
+    );
+    expect(forged).toMatchObject({
+      contents: JSON.stringify({ customToken: "custom:user-1" }),
+    });
+    await auth.signOut();
+    await expect(client.issueFirebaseCustomToken({})).rejects.toThrow(
+      "Unauthorized",
+    );
+    storage.set("expired");
+    await expect(client.issueFirebaseCustomToken({})).rejects.toThrow(
+      "Unauthorized",
+    );
+    expect(issueCustomToken).toHaveBeenCalledTimes(2);
   });
 });

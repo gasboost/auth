@@ -52,18 +52,21 @@ token がない場合や空白のみの場合は metadata を返しません。
 業務 input に token を追加したり、認証対象 RPC 名を列挙したりする必要はありません。
 backend の公開 auth RPC は `authentication(auth)` より前に登録します。
 
-## Consumer Hook（Firebase の例）
+## ExternalAuth と Consumer Hook（Firebase の例）
 
 backend で Firebase Custom Token を返す設定にします。`repository` / `runtime` /
 `sessionConfig` / `emailPasswordOptions` は既存のサーバー設定です。
 
 ```ts
 import { AppsScriptAuth } from "@gasboost/auth";
-import { handlers } from "@gasboost/auth-app";
+import type { InferAppsScript } from "@gasboost/app";
+import { authentication, handlers } from "@gasboost/auth-app";
+import { FirebaseCustomToken } from "@gasboost/realtime-firebase";
 import { FirebaseAuthHook } from "@gasboost/auth-realtime-firebase";
 
+const serviceAccount = { email: serviceAccountEmail, privateKey };
 const firebaseHook = new FirebaseAuthHook({
-  serviceAccount: { email: serviceAccountEmail, privateKey },
+  serviceAccount,
   utilities: Utilities,
 });
 const auth = new AppsScriptAuth({
@@ -74,7 +77,21 @@ const auth = new AppsScriptAuth({
   hooks: { afterSignIn: firebaseHook.afterSignIn },
 });
 // 既存の AppsScript app へ登録し、その型を frontend に渡します。
-app.calls(handlers(auth));
+const authApp = app
+  .calls(handlers(auth))
+  .use(authentication(auth))
+  .call("issueFirebaseCustomToken", (_: Record<string, never>, context) => {
+    // middleware が検証した Session の User ID だけを使います。
+    const session = context.state.get("session");
+    return {
+      customToken: FirebaseCustomToken.generate({
+        uid: session.userId,
+        serviceAccount,
+        utilities: Utilities,
+      }),
+    };
+  });
+export type AppType = InferAppsScript<typeof authApp>;
 ```
 
 frontend は上記 app の型で作成した `client` と共有 `storage` を使用します。
@@ -82,7 +99,10 @@ frontend は上記 app の型で作成した `client` と共有 `storage` を使
 
 ```ts
 import { appsScriptAuth } from "@gasboost/auth-client/appsscript";
-import { signInWithCustomToken, signOut } from "firebase/auth";
+import {
+  signInWithCustomToken,
+  signOut as firebaseSignOut,
+} from "firebase/auth";
 
 export const auth = appsScriptAuth({
   client,
@@ -91,14 +111,19 @@ export const auth = appsScriptAuth({
     afterSignIn: async ({ hooks }) => {
       await signInWithCustomToken(firebaseAuth, hooks.customToken);
     },
-    sync: async (restored) => {
+  },
+  getUserId: (result) => result.session.userId,
+  externalAuth: {
+    getUserId: async () => {
       await firebaseAuth.authStateReady();
-      // 外部認証がない場合や uid が不一致の場合、表示可否や再認証は Consumer が判断します。
-      return restored === null
-        ? firebaseAuth.currentUser === null
-        : firebaseAuth.currentUser?.uid === restored.session.userId;
+      return firebaseAuth.currentUser?.uid ?? null;
     },
-    afterSignOut: () => signOut(firebaseAuth),
+    signIn: async (_expectedUserId) => {
+      // クライアントから User ID を指定せず、現在の GAS Session で再発行します。
+      const { customToken } = await client.issueFirebaseCustomToken({});
+      await signInWithCustomToken(firebaseAuth, customToken);
+    },
+    signOut: () => firebaseSignOut(firebaseAuth),
   },
 });
 
@@ -106,7 +131,16 @@ const signedUp = await auth.signUp({ name, email, password });
 signedUp.hooks.customToken; // string
 const signedIn = await auth.signIn({ email, password });
 signedIn.hooks.customToken; // string
+
+const { session, synchronized } = await auth.sync();
+const isAuthenticated = session !== null && synchronized;
 ```
+
+GAS=A / Firebase=null・B を修復するには、上記のような Custom Token の再発行RPCが必要です。
+再発行RPCは `authentication(auth)` の後に登録し、リクエストで任意の User ID を受け取らず、
+検証済み Session の `userId` から署名します。Custom Claims を設定する場合も、
+サインイン時と再発行時で同じ認可方針に従ってください。
+Firebase SDK と再発行RPCは Consumer が用意し、`auth-client` 本体はどちらも import / wrap しません。
 
 同じ Consumer Hook を Sign In / Sign Up（email / Apps Script）の両方で1回 await し、
 成功後に token を保存して state を通知します。引数は `{ user, session, token, hooks }` 等の
@@ -154,34 +188,64 @@ token がなければ RPC を呼びません。無効・期限切れなら stora
 必要な user 情報は application の RPC で取得してください。
 RPC の JSON result は通常の data object として扱います。
 
-`sync()` は `restoreSession()` と同じ GAS Session の検証・復元を行った後、
-`hooks.sync(session)` を await し、`{ session, synchronized }` を返します。
-Hook 引数は復元結果または `null` で、`boolean | Promise<boolean>` を返します。
-Apps Script adapter では `session.session.userId` などを `getSession` RPC から型推論します。
-Hook 未指定時は `synchronized: true` です。
-Hook が `false` を返す場合や throw / reject する場合も、有効な GAS Session は維持し、
-自動 signOut / revoke は行いません。例外は呼び出し元へ伝搬します。
-`getState().isAuthenticated` は GAS 側だけの認証状態です。
-外部認証も必要な Consumer は `session` と `synchronized` を確認してください。
-外部 SDK の復元待ち、照合、再同期、認証情報の取得・永続化は Consumer の責務です。
-Firebase を含む外部 SDK の adapter / dependency はこの package に追加しません。
+`externalAuth` は任意指定です。指定する場合は、`getUserId(session): string` も渡します。
+抽出関数は復元時と Sign In / Sign Up 時の Session に対応する必要があります。
+Apps Script では `result.session.userId` を利用でき、RPC の戻り値から型推論します。
+`ExternalAuth` は root から export する汎用 interface です。
 
-`signOut()` は state の復元前でも保存済み token を使い、server session の破棄に成功してから
-storage / state を消去し、`hooks.afterSignOut()`（`void | Promise<void>`）を await します。
-token がない場合も明示的な `signOut()` では外部 Hook を実行します。
-通信エラーでは既存の storage / state を維持して再試行でき、外部 Hook は呼びません。
-外部 Hook が失敗した場合は例外を伝搬し、GAS 側の解除はロールバックしません。
-`restoreSession()` / `sync()` や `afterSignIn` 失敗時の revoke では `afterSignOut` を呼びません。
-remote / storage エラーは呼び出し元へ伝搬します。
+```ts
+interface ExternalAuth {
+  getUserId(): Promise<string | null>;
+  signIn(userId: string): Promise<void>;
+  signOut(): Promise<void>;
+}
+```
 
-同じ auth instance で操作が重なった場合、最後に開始した操作だけが local state を更新します。
-先行する操作の Promise は remote 結果を返しますが、新しい local state は上書きしません。
-`sync()` が別の認証操作や共有 storage の token 変更で古くなった場合は、
-未実行の `hooks.sync` をスキップし、`synchronized: false` を返します。
-Hook 待機中に古くなった場合も `synchronized: false` です。`session` はその呼び出しの復元結果です。
-古くなった `signOut()` は `afterSignOut` をスキップします。
-開始済みの外部 Hook の副作用や進行中の server RPC 自体は取り消せません。
-古くなった Hook が失敗した場合も例外を伝搬します。
+外部 ID は Consumer がアプリケーション User ID に正規化してください。
+Firebase のこの例では `Firebase uid === GAS User.id` です。
+`signIn(userId)` は、必要なら現在の外部ユーザーを指定ユーザーへ切り替える契約です。
+SDK が切替前の signOut を必要とする場合は Adapter 内で行います。
+
+`isSynced()` は復元済みの現在の GAS Session と `externalAuth.getUserId()` を照合するだけです。
+GAS の復元・検証や、外部認証の signIn / signOut は行いません。
+起動直後の local state は未認証なので、保存済み token の検証には先に `restoreSession()`、
+または修復を含む `sync()` を使います。
+
+`sync()` は GAS Session の検証・復元後、ID を比較して次の修復を実施し、
+`{ session, synchronized }` を返します。
+
+| GAS User ID | 外部 User ID | 動作                  |
+| ----------- | ------------ | --------------------- |
+| null        | null         | 変更なし              |
+| null        | A            | 外部 signOut          |
+| A           | null         | 外部 signIn(A)        |
+| A           | A            | 変更なし              |
+| A           | B            | 外部 signIn(A) で切替 |
+
+修復後は外部 ID を再取得し、一致する場合だけ `synchronized: true` を返します。
+不一致なら `false`、SDK / RPC / storage の失敗は例外として伝搬します。
+同期失敗や外部 ID の不一致を理由に、有効な GAS Session を signOut / revoke しません。
+両方 null は同期済みですが認証済みではありません。
+`getState().isAuthenticated` は従来どおり GAS 側だけの状態です。
+外部認証も必要な Consumer は `session !== null && synchronized` を判定してください。
+`externalAuth` 未指定なら `isSynced()` / `sync()` の同期判定は true です（競合時を除く）。
+
+`signOut()` は保存済み token で server session を失効させ、storage / state の解除後に
+`externalAuth.signOut()` を await します。token がない場合も外部認証を解除します。
+GAS 側の失敗時は既存の状態を維持し、外部 signOut を呼びません。
+外部 signOut が失敗した場合は例外を伝搬し、GAS 側の解除はロールバックしません。
+`restoreSession()` や `afterSignIn` 失敗時の revoke は外部認証を解除しません。
+
+同じ auth instance では最後に開始した認証操作だけが local state を更新します。
+`sync()` / `isSynced()` の比較が重なった場合も、古い比較を成功扱いしません。
+`isSynced()` は進行中の Sign In / Sign Up を取り消しません。
+同期中の認証操作や共有 storage の token 変更で古くなった処理は、未実行の外部操作を
+スキップし、`synchronized: false` / `false` を返します。
+`sync()` の `session` はその呼び出しの復元結果です。古い `signOut()` も外部解除をスキップします。
+開始済みの SDK / RPC の副作用は取り消せず、古い操作の例外も伝搬します。
+必要なら最新の状態で `sync()` を再実行してください。
+同期は呼び出し時点の1回限りで、後から発生する外部ログアウトの監視は行いません。
+リアルタイム監視が必要なら Consumer が SDK のイベントを購読してください。
 
 Password Reset が有効な場合は元の typed client の
 `client.forgotPassword({ email })` / `client.resetPassword({ token, newPassword })` を利用します。

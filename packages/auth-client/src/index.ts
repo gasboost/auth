@@ -11,6 +11,7 @@ export {
   authClient,
   type AuthClient,
   type AuthClientHooks,
+  type ExternalAuth,
 } from "./client/authClient";
 export type { AuthRemote } from "./client/AuthRemote";
 export type { AuthSession, AuthState, AuthListener } from "./client/types";

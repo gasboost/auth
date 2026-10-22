@@ -19,6 +19,7 @@ function enabledConsumer() {
   void auth.signOut();
   void auth.restoreSession();
   void auth.sync();
+  void auth.isSynced();
   void client.forgotPassword({ email: "user" });
   void client.resetPassword({ token: "token", newPassword: "password" });
 
@@ -70,19 +71,21 @@ function hookConsumer() {
         const invalid: number = hooks.customToken;
         void [customToken, sessionToken, name, invalid];
       },
-      sync: (restored) => {
-        if (restored === null) return true;
-        const userId: string = restored.session.userId;
-        const token: string = restored.token;
-        const user: null = restored.user;
-        // @ts-expect-error getSession does not return sign-in hook data
-        void restored.hooks;
-        // @ts-expect-error RPC userId is a string
-        const invalid: number = restored.session.userId;
-        void [userId, token, user, invalid];
-        return true;
+    },
+    getUserId: (result) => {
+      const userId: string = result.session.userId;
+      // @ts-expect-error RPC userId is a string
+      const invalid: number = result.session.userId;
+      void invalid;
+      return userId;
+    },
+    externalAuth: {
+      getUserId: async () => null,
+      signIn: async (userId) => {
+        const id: string = userId;
+        void id;
       },
-      afterSignOut: async () => {},
+      signOut: async () => {},
     },
   });
   async function results() {
@@ -104,6 +107,16 @@ function hookConsumer() {
     void [success, userId];
     return tokens;
   }
+  // @ts-expect-error externalAuth requires a typed ID extractor
+  appsScriptAuth({
+    client,
+    storage: memoryAuthStorage(),
+    externalAuth: {
+      getUserId: async () => null,
+      signIn: async () => {},
+      signOut: async () => {},
+    },
+  });
   void results;
 }
 void hookConsumer;
