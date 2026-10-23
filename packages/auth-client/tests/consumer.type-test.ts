@@ -18,6 +18,8 @@ function enabledConsumer() {
   void auth.signUpAppsScript({ name: "Taro" });
   void auth.signOut();
   void auth.restoreSession();
+  void auth.sync();
+  void auth.isSynced();
   void client.forgotPassword({ email: "user" });
   void client.resetPassword({ token: "token", newPassword: "password" });
 
@@ -70,6 +72,21 @@ function hookConsumer() {
         void [customToken, sessionToken, name, invalid];
       },
     },
+    getUserId: (result) => {
+      const userId: string = result.session.userId;
+      // @ts-expect-error RPC userId is a string
+      const invalid: number = result.session.userId;
+      void invalid;
+      return userId;
+    },
+    externalAuth: {
+      getUserId: async () => null,
+      signIn: async (userId) => {
+        const id: string = userId;
+        void id;
+      },
+      signOut: async () => {},
+    },
   });
   async function results() {
     const signedIn = await auth.signIn({ email: "user", password: "password" });
@@ -84,8 +101,22 @@ function hookConsumer() {
       signedUp.hooks.customToken,
       appsScript.hooks.customToken,
     ];
+    const synchronized = await auth.sync();
+    const success: boolean = synchronized.synchronized;
+    const userId: string | undefined = synchronized.session?.session.userId;
+    void [success, userId];
     return tokens;
   }
+  // @ts-expect-error externalAuth requires a typed ID extractor
+  appsScriptAuth({
+    client,
+    storage: memoryAuthStorage(),
+    externalAuth: {
+      getUserId: async () => null,
+      signIn: async () => {},
+      signOut: async () => {},
+    },
+  });
   void results;
 }
 void hookConsumer;

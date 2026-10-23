@@ -298,6 +298,7 @@ import {
   authCore,
   type AuthRemote,
   type AuthStorage,
+  type ExternalAuth,
 } from "@gasboost/auth-client";
 import {
   appsScriptAuth,
@@ -318,6 +319,7 @@ import {
 import {
   FirebaseAuthHook,
 } from "@gasboost/auth-realtime-firebase";
+import { FirebaseCustomToken } from "@gasboost/realtime-firebase";
 
 import {
   SheetOrmAuthRepository,
@@ -349,8 +351,9 @@ const repository =
     schema: definitions.schema,
   });
 
+const serviceAccount = { email: "service@example.com", privateKey: "server-only-key" };
 const firebaseHook = new FirebaseAuthHook({
-  serviceAccount: { email: "service@example.com", privateKey: "server-only-key" },
+  serviceAccount,
   utilities: {} as never,
 });
 
@@ -382,6 +385,13 @@ isAuthMetadata(metadata[AUTH_METADATA_KEY]);
 const app = new AppsScript()
   .calls(handlers(serverAuth))
   .use(authentication(serverAuth))
+  .call("issueFirebaseCustomToken", (_: Record<string, never>, context) => ({
+    customToken: FirebaseCustomToken.generate({
+      uid: context.state.get("session").userId,
+      serviceAccount,
+      utilities: {} as never,
+    }),
+  }))
   .call("updateProfile", (input: { name: string }, context) => ({
     name: input.name,
     userId: context.state.get("session").userId,
@@ -392,12 +402,33 @@ const storage: AuthStorage = memoryAuthStorage();
 const { client } = appsScriptClient<InferAppsScript<typeof app>>({
   metadataProviders: [authMetadataProvider(storage)],
 });
-const auth = appsScriptAuth({ client, storage, hooks: {
+// Consumer SDK operations; the library only depends on ExternalAuth.
+declare const firebaseAuth: {
+  authStateReady(): Promise<void>;
+  currentUser: { uid: string } | null;
+};
+declare function signInWithCustomToken(auth: typeof firebaseAuth, token: string): Promise<unknown>;
+declare function firebaseSignOut(auth: typeof firebaseAuth): Promise<void>;
+const externalAuth: ExternalAuth = {
+  getUserId: async () => {
+    await firebaseAuth.authStateReady();
+    return firebaseAuth.currentUser?.uid ?? null;
+  },
+  signIn: async () => {
+    const { customToken } = await client.issueFirebaseCustomToken({});
+    await signInWithCustomToken(firebaseAuth, customToken);
+  },
+  signOut: () => firebaseSignOut(firebaseAuth),
+};
+const auth = appsScriptAuth({ client, storage, externalAuth,
+getUserId: (result) => result.session.userId,
+hooks: {
   afterSignIn: async ({ hooks }) => {
     const customToken: string = hooks.customToken;
     // @ts-expect-error Firebase hook result remains string through the RPC client
     const invalid: number = hooks.customToken;
     void [customToken, invalid];
+    await signInWithCustomToken(firebaseAuth, customToken);
   },
 } });
 async function hookResults() {
@@ -405,6 +436,12 @@ async function hookResults() {
   const signedUp = await auth.signUp({ name: "Taro", email: "user@example.com", password: "password" });
   const appsScript = await auth.signUpAppsScript({ name: "Taro" });
   const tokens: string[] = [signedIn.hooks.customToken, signedUp.hooks.customToken, appsScript.hooks.customToken];
+  const { session, synchronized } = await auth.sync();
+  const id: string | undefined = session?.session.userId;
+  const matched: boolean = await auth.isSynced();
+  // @ts-expect-error Consumer RPC accepts no client-supplied user ID
+  void client.issueFirebaseCustomToken({ userId: "attacker" });
+  void [id, synchronized, matched];
   return tokens;
 }
 void hookResults;

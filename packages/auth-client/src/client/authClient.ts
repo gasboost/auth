@@ -3,9 +3,20 @@ import type { AuthStorage } from "../core/AuthStorage";
 import type { AuthRemote } from "./AuthRemote";
 import type { AuthSession } from "./types";
 
+/** IDs must be normalized to application User IDs by the consumer. */
+export interface ExternalAuth {
+  getUserId(): Promise<string | null>;
+  signIn(userId: string): Promise<void>;
+  signOut(): Promise<void>;
+}
+
 export type AuthClientHooks<TResult extends AuthSession> = {
   afterSignIn?: (result: TResult) => void | Promise<void>;
 };
+
+export type ExternalAuthOptions<TSession extends AuthSession> =
+  | { externalAuth?: undefined; getUserId?: (session: TSession) => string }
+  | { externalAuth: ExternalAuth; getUserId: (session: TSession) => string };
 
 export function authClient<
   TSession extends AuthSession,
@@ -17,6 +28,8 @@ export function authClient<
   remote,
   storage,
   hooks,
+  externalAuth,
+  getUserId,
 }: {
   remote: AuthRemote<
     TSession,
@@ -27,11 +40,25 @@ export function authClient<
   >;
   storage: AuthStorage;
   hooks?: AuthClientHooks<TSignInSession | TSignUpSession>;
-}) {
+} & ExternalAuthOptions<TSession | TSignInSession | TSignUpSession>) {
   const core = authCore<TSession | TSignInSession | TSignUpSession>({
     storage,
   });
   let revision = 0;
+  let comparisonRevision = 0;
+
+  async function restoreSession(current: number): Promise<TSession | null> {
+    const token = storage.get();
+    if (token === null || token.trim().length === 0) {
+      core.setSession(null);
+      return null;
+    }
+    const session = await remote.getSession(token);
+    if (current === revision && storage.get() === token) {
+      core.setSession(session);
+    }
+    return session;
+  }
 
   async function authenticate<TResult extends TSignInSession | TSignUpSession>(
     operation: () => Promise<TResult>,
@@ -76,20 +103,47 @@ export function authClient<
       // A newer operation or another owner of this storage supersedes this one.
       if (current === revision && storage.get() === token) {
         core.setSession(null);
+        if (current === revision && storage.get() === null)
+          await externalAuth?.signOut();
       }
     },
-    async restoreSession(): Promise<TSession | null> {
-      const current = ++revision;
+    restoreSession(): Promise<TSession | null> {
+      return restoreSession(++revision);
+    },
+    async isSynced(): Promise<boolean> {
+      const comparison = ++comparisonRevision;
+      const current = revision;
       const token = storage.get();
-      if (token === null || token.trim().length === 0) {
-        core.setSession(null);
-        return null;
+      const session = core.getSession();
+      const expected = session === null ? null : getUserId?.(session);
+      const actual = externalAuth ? await externalAuth.getUserId() : expected;
+      return (
+        comparison === comparisonRevision &&
+        current === revision &&
+        storage.get() === token &&
+        actual === expected
+      );
+    },
+    async sync(): Promise<{ session: TSession | null; synchronized: boolean }> {
+      const current = ++revision;
+      const comparison = ++comparisonRevision;
+      const session = await restoreSession(current);
+      const isCurrent = () =>
+        current === revision &&
+        comparison === comparisonRevision &&
+        storage.get() === (session?.token ?? null);
+      if (!isCurrent()) return { session, synchronized: false };
+      if (!externalAuth) return { session, synchronized: true };
+      const expected = session === null ? null : getUserId(session);
+      let actual = await externalAuth.getUserId();
+      if (!isCurrent()) return { session, synchronized: false };
+      if (actual !== expected) {
+        if (expected === null) await externalAuth.signOut();
+        else await externalAuth.signIn(expected);
+        if (!isCurrent()) return { session, synchronized: false };
+        actual = await externalAuth.getUserId();
       }
-      const session = await remote.getSession(token);
-      if (current === revision && storage.get() === token) {
-        core.setSession(session);
-      }
-      return session;
+      return { session, synchronized: isCurrent() && actual === expected };
     },
   };
 }
