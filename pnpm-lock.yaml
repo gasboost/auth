@@ -89,9 +89,27 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
     devDependencies:
+      '@gasboost/app':
+        specifier: ^5.2.0
+        version: 5.2.0
+      '@gasboost/auth-app':
+        specifier: workspace:*
+        version: link:../auth-app
+      '@gasboost/auth-client':
+        specifier: workspace:*
+        version: link:../auth-client
+      '@gasboost/client':
+        specifier: ^0.5.0
+        version: 0.5.0
+      '@gasboost/fake-core':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@gasboost/fake-node':
         specifier: ^0.1.2
         version: 0.1.2(date-fns@4.4.0)
+      '@types/google-apps-script':
+        specifier: ^2.0.13
+        version: 2.0.13
       '@types/node':
         specifier: ^26.4.1
         version: 26.5.1

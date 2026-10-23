@@ -74,7 +74,11 @@ const packages = [
   {
     name: "@gasboost/auth-realtime-firebase",
     directory: join(rootDirectory, "packages", "auth-realtime-firebase"),
-    exports: ["FirebaseAuthHook"],
+    exports: ["FirebaseAuthHook", "firebaseAuthHandlers"],
+    peers: {
+      "@gasboost/app": "^5.2.0",
+      "@gasboost/auth-app": "^0.6.0",
+    },
   },
 ];
 
@@ -318,8 +322,8 @@ import {
 
 import {
   FirebaseAuthHook,
+  firebaseAuthHandlers,
 } from "@gasboost/auth-realtime-firebase";
-import { FirebaseCustomToken } from "@gasboost/realtime-firebase";
 
 import {
   SheetOrmAuthRepository,
@@ -382,16 +386,12 @@ const metadata = {
   [AUTH_METADATA_KEY]: { token: "session-id" } satisfies AuthMetadata,
 };
 isAuthMetadata(metadata[AUTH_METADATA_KEY]);
+// @ts-expect-error Firebase RPC requires authentication middleware
+new AppsScript().calls(firebaseAuthHandlers(firebaseHook));
 const app = new AppsScript()
   .calls(handlers(serverAuth))
   .use(authentication(serverAuth))
-  .call("issueFirebaseCustomToken", (_: Record<string, never>, context) => ({
-    customToken: FirebaseCustomToken.generate({
-      uid: context.state.get("session").userId,
-      serviceAccount,
-      utilities: {} as never,
-    }),
-  }))
+  .calls(firebaseAuthHandlers(firebaseHook))
   .call("updateProfile", (input: { name: string }, context) => ({
     name: input.name,
     userId: context.state.get("session").userId,
@@ -415,7 +415,7 @@ const externalAuth: ExternalAuth = {
     return firebaseAuth.currentUser?.uid ?? null;
   },
   signIn: async () => {
-    const { customToken } = await client.issueFirebaseCustomToken({});
+    const { customToken } = await client.issueFirebaseCustomToken();
     await signInWithCustomToken(firebaseAuth, customToken);
   },
   signOut: () => firebaseSignOut(firebaseAuth),

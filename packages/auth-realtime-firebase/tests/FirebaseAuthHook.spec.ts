@@ -1,7 +1,7 @@
 import { User, type AfterSignInContext } from "@gasboost/auth";
 import { NodeUtilities } from "@gasboost/fake-node";
 import { generateKeyPairSync } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { FirebaseAuthHook } from "../src/FirebaseAuthHook";
 
 describe("FirebaseAuthHook", () => {
@@ -46,13 +46,13 @@ describe("FirebaseAuthHook", () => {
     session,
   } satisfies AfterSignInContext;
 
-  it("user.idをFirebase uidとしてCustom Tokenを生成する", () => {
+  it("Sessionのみでsession.userIdをFirebase uidとしてCustom Tokenを生成する", () => {
     const firebase = new FirebaseAuthHook({
       serviceAccount,
       utilities,
     });
 
-    const result = firebase.afterSignIn(context);
+    const result = firebase.afterSignIn({ session });
 
     expect(result).not.toBeInstanceOf(Promise);
 
@@ -118,30 +118,35 @@ describe("FirebaseAuthHook", () => {
     expect(payload).not.toHaveProperty("claims");
   });
 
-  it("claims factoryからUserを参照できる", () => {
+  it("claims factoryにはUserを含めずSessionのみを渡す", () => {
+    const claims = vi.fn(
+      ({ session }: { session: typeof context.session }) => ({
+        userId: session.userId,
+      }),
+    );
     const firebase = new FirebaseAuthHook({
       serviceAccount,
       utilities,
-      claims: ({ user }) => ({
-        userName: user.name,
-      }),
+      claims,
     });
-
-    const result = firebase.afterSignIn(context);
-
-    const { customToken } = result as {
-      customToken: string;
-    };
-
-    const [, payloadSegment] = customToken.split(".");
-
+    const { customToken } = firebase.afterSignIn(context);
     const payload = JSON.parse(
-      Buffer.from(payloadSegment, "base64url").toString("utf8"),
+      Buffer.from(customToken.split(".")[1]!, "base64url").toString("utf8"),
     );
+    expect(claims).toHaveBeenCalledExactlyOnceWith({ session });
+    expect(payload.claims).toEqual({ userId: session.userId });
+  });
 
-    expect(payload.claims).toEqual({
-      userName: "Taro",
+  it("Userが異なっていてもUIDはSessionから決める", () => {
+    const firebase = new FirebaseAuthHook({ serviceAccount, utilities });
+    const { customToken } = firebase.afterSignIn({
+      ...context,
+      session: { ...session, userId: "session-owner" },
     });
+    const payload = JSON.parse(
+      Buffer.from(customToken.split(".")[1]!, "base64url").toString("utf8"),
+    );
+    expect(payload.uid).toBe("session-owner");
   });
 
   it("claims factoryからSessionを参照できる", () => {
