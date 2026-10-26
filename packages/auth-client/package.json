@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-client",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Framework-independent auth lifecycle, token storage, and Apps Script RPC adapters.",
   "keywords": [
     "google-apps-script",
