@@ -71,6 +71,7 @@ function hookConsumer() {
         const invalid: number = hooks.customToken;
         void [customToken, sessionToken, name, invalid];
       },
+      afterSignOut: async () => {},
     },
     getUserId: (result) => {
       const userId: string = result.session.userId;

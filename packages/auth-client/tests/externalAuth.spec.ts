@@ -37,7 +37,7 @@ function setup(gas: Session | null = first, externalId: string | null = null) {
     }),
   } satisfies ExternalAuth;
   const getUserId = (session: Session) => session.user!.id;
-  const hooks = { afterSignIn: vi.fn() };
+  const hooks = { afterSignIn: vi.fn(), afterSignOut: vi.fn() };
   const auth = authClient({ remote, storage, externalAuth, getUserId, hooks });
   return { auth, remote, storage, externalAuth, getUserId, hooks };
 }
@@ -74,6 +74,7 @@ describe("external auth synchronization", () => {
       );
       expect(remote.signOut).not.toHaveBeenCalled();
       expect(hooks.afterSignIn).not.toHaveBeenCalled();
+      expect(hooks.afterSignOut).not.toHaveBeenCalled();
       expect(auth.getState().isAuthenticated).toBe(gas !== null);
       expect(storage.get()).toBe(gas?.token ?? null);
     },
@@ -376,7 +377,7 @@ describe("explicit external sign out", () => {
   it.each([first, null])(
     "awaits external sign out after GAS is cleared: %j",
     async (session) => {
-      const { auth, externalAuth, storage } = setup(session, "A");
+      const { auth, externalAuth, storage, hooks } = setup(session, "A");
       const pending = deferred<void>();
       const entered = deferred<void>();
       externalAuth.signOut.mockImplementation(() => {
@@ -391,9 +392,11 @@ describe("explicit external sign out", () => {
       });
       await entered.promise;
       expect(completed).toBe(false);
+      expect(hooks.afterSignOut).not.toHaveBeenCalled();
       pending.resolve();
       await signingOut;
       expect(externalAuth.signOut).toHaveBeenCalledExactlyOnceWith();
+      expect(hooks.afterSignOut).toHaveBeenCalledExactlyOnceWith();
     },
   );
 
@@ -407,13 +410,35 @@ describe("explicit external sign out", () => {
   });
 
   it("does not roll back GAS sign out when external sign out fails", async () => {
-    const { auth, externalAuth, storage } = setup(first, "A");
+    const { auth, externalAuth, storage, hooks } = setup(first, "A");
     const error = new Error("SDK failure");
     externalAuth.signOut.mockRejectedValue(error);
     await expect(auth.signOut()).rejects.toBe(error);
     expect(storage.get()).toBeNull();
     expect(auth.getState().isAuthenticated).toBe(false);
+    expect(hooks.afterSignOut).not.toHaveBeenCalled();
   });
+
+  it.each(["signIn", "storage"] as const)(
+    "skips the hook when %s supersedes pending external sign out",
+    async (operation) => {
+      const { auth, externalAuth, storage, hooks } = setup(first, "A");
+      const pending = deferred<void>();
+      const entered = deferred<void>();
+      externalAuth.signOut.mockImplementationOnce(() => {
+        entered.resolve();
+        return pending.promise;
+      });
+      const stale = auth.signOut();
+      await entered.promise;
+      if (operation === "signIn") await auth.signIn({ email: "new" });
+      else storage.set(second.token);
+      pending.resolve();
+      await stale;
+      expect(hooks.afterSignOut).not.toHaveBeenCalled();
+      expect(storage.get()).toBe(second.token);
+    },
+  );
 
   it("skips external sign out for a superseded GAS sign out", async () => {
     const { auth, remote, externalAuth } = setup();
