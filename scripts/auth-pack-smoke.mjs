@@ -430,6 +430,7 @@ hooks: {
     void [customToken, invalid];
     await signInWithCustomToken(firebaseAuth, customToken);
   },
+  afterSignOut: async () => {},
 } });
 async function hookResults() {
   const signedIn = await auth.signIn({ email: "user@example.com", password: "password" });

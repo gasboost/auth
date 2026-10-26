@@ -111,6 +111,9 @@ export const auth = appsScriptAuth({
     afterSignIn: async ({ hooks }) => {
       await signInWithCustomToken(firebaseAuth, hooks.customToken);
     },
+    afterSignOut: () => {
+      queryClient.clear(); // Consumer が用意した TanStack Query の QueryClient
+    },
   },
   getUserId: (result) => result.session.userId,
   externalAuth: {
@@ -142,13 +145,20 @@ GAS=A / Firebase=null・B を修復するには、上記のような Custom Toke
 サインイン時と再発行時で同じ認可方針に従ってください。
 Firebase SDK と再発行RPCは Consumer が用意し、`auth-client` 本体はどちらも import / wrap しません。
 
-同じ Consumer Hook を Sign In / Sign Up（email / Apps Script）の両方で1回 await し、
+`afterSignIn` を Sign In / Sign Up（email / Apps Script）の両方で1回 await し、
 成功後に token を保存して state を通知します。引数は `{ user, session, token, hooks }` 等の
 認証結果全体です。サーバー Hook がない場合は `hooks` プロパティもなく、Consumer Hook 自体は実行できます。
 Consumer Hook 未指定時は従来どおり動作します。`authClient({ remote, storage, hooks })` でも
 同じ汎用 Hook を利用できます。
 
-Consumer Hook 失敗時は今回発行された session の `remote.signOut(token)` を await し、
+`afterSignOut?: () => void | Promise<void>` は明示的な `signOut()` で local storage / state を
+破棄し、設定されている `externalAuth.signOut()` が成功した後に、引数なしで1回 await します。
+token がない場合も実行します。新しい認証操作や storage の変更で古い Sign Out が無効化された場合や、
+server / storage / 外部認証の解除が失敗した場合は実行しません。
+Hook の例外・rejection は `signOut()` の呼び出し元へ伝搬し、解除済みの Session は復元しません。
+`restoreSession()` / `sync()` やセッション期限切れによる解除では実行しません。
+
+`afterSignIn` 失敗時は今回発行された session の `remote.signOut(token)` を await し、
 元の Hook エラーで認証 Promise を reject します。既存の local state / storage は維持します。
 失効 RPC 自体が失敗した場合も元のエラーを返し、サーバー Session が残る可能性があります。
 呼び出し元はエラーを表示し、必要に応じて再認証してください。Sign Up RPC は自動再実行しません。

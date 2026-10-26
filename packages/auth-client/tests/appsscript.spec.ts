@@ -362,6 +362,19 @@ describe("consumer authentication hooks", () => {
 });
 
 describe("Apps Script external authentication lifecycle", () => {
+  it("forwards afterSignOut after remote and local session cleanup", async () => {
+    const { client, storage, sessions } = setup();
+    const afterSignOut = vi.fn(() => {
+      expect(storage.get()).toBeNull();
+      expect(auth.getSession()).toBeNull();
+      expect(sessions.has(signedIn.token)).toBe(false);
+    });
+    const auth = appsScriptAuth({ client, storage, hooks: { afterSignOut } });
+    const signedIn = await auth.signIn({ email: "user", password: "password" });
+    await auth.signOut();
+    expect(afterSignOut).toHaveBeenCalledExactlyOnceWith();
+  });
+
   it("repairs external auth using the validated GAS user ID", async () => {
     const { client, storage, sessions, server } = setup();
     let externalId: string | null = "other";

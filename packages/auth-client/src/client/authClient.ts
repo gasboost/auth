@@ -12,6 +12,7 @@ export interface ExternalAuth {
 
 export type AuthClientHooks<TResult extends AuthSession> = {
   afterSignIn?: (result: TResult) => void | Promise<void>;
+  afterSignOut?: () => void | Promise<void>;
 };
 
 export type ExternalAuthOptions<TSession extends AuthSession> =
@@ -103,8 +104,11 @@ export function authClient<
       // A newer operation or another owner of this storage supersedes this one.
       if (current === revision && storage.get() === token) {
         core.setSession(null);
-        if (current === revision && storage.get() === null)
+        if (current === revision && storage.get() === null) {
           await externalAuth?.signOut();
+          if (current === revision && storage.get() === null)
+            await hooks?.afterSignOut?.();
+        }
       }
     },
     restoreSession(): Promise<TSession | null> {

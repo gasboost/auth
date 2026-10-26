@@ -7,20 +7,24 @@ import {
   type AuthRemote,
   type AuthStorage,
   type AuthSession,
+  type AuthClientHooks,
 } from "../src";
 
 type Session = AuthSession<{ id: string }>;
 const first: Session = { token: "session-1", user: { id: "user-1" } };
 const second: Session = { token: "session-2", user: { id: "user-2" } };
 
-function setup(storage: AuthStorage = memoryAuthStorage()) {
+function setup(
+  storage: AuthStorage = memoryAuthStorage(),
+  hooks?: AuthClientHooks<Session>,
+) {
   const remote = {
     signIn: vi.fn(async (_input: { email: string }) => first),
     signUp: vi.fn(async (_input: { name: string }) => second),
     signOut: vi.fn(async (_token: string) => {}),
     getSession: vi.fn(async (_token: string): Promise<Session | null> => first),
   } satisfies AuthRemote<Session, { email: string }, { name: string }>;
-  const auth = authClient({ remote, storage });
+  const auth = authClient({ remote, storage, hooks });
   return { auth, remote, storage };
 }
 
@@ -243,6 +247,116 @@ describe("authClient", () => {
     pending.resolve(null);
     await result;
     expect(storage.get()).toBe(second.token);
+  });
+});
+
+describe("authClient afterSignOut", () => {
+  it.each([first.token, null, "", " \t"])(
+    "calls the hook once after clearing local auth for token %j",
+    async (token) => {
+      const afterSignOut = vi.fn(() => {
+        expect(storage.get()).toBeNull();
+        expect(auth.getSession()).toBeNull();
+        expect(auth.getState().isAuthenticated).toBe(false);
+      });
+      const afterSignIn = vi.fn();
+      const { auth, storage } = setup(memoryAuthStorage(), {
+        afterSignIn,
+        afterSignOut,
+      });
+      await auth.signIn({ email: "first" });
+      if (token === null) storage.remove();
+      else storage.set(token);
+      await auth.signOut();
+      expect(afterSignOut).toHaveBeenCalledExactlyOnceWith();
+      expect(afterSignIn).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("awaits the asynchronous hook", async () => {
+    const pending = deferred<void>();
+    const entered = deferred<void>();
+    const { auth } = setup(memoryAuthStorage(), {
+      afterSignOut: () => {
+        entered.resolve();
+        return pending.promise;
+      },
+    });
+    let completed = false;
+    const signingOut = auth.signOut().then(() => {
+      completed = true;
+    });
+    await entered.promise;
+    expect(completed).toBe(false);
+    pending.resolve();
+    await signingOut;
+    expect(completed).toBe(true);
+  });
+
+  it.each([false, true])(
+    "propagates hook failure (async=%s)",
+    async (async) => {
+      const error = new Error("Cache cleanup failed");
+      const { auth, storage } = setup(memoryAuthStorage(), {
+        afterSignOut: () => {
+          if (async) return Promise.reject(error);
+          throw error;
+        },
+      });
+      await auth.signIn({ email: "first" });
+      await expect(auth.signOut()).rejects.toBe(error);
+      expect(storage.get()).toBeNull();
+      expect(auth.getSession()).toBeNull();
+    },
+  );
+
+  it("skips the hook when remote sign out fails", async () => {
+    const afterSignOut = vi.fn();
+    const { auth, remote, storage } = setup(memoryAuthStorage(), {
+      afterSignOut,
+    });
+    await auth.signIn({ email: "first" });
+    const error = new Error("Remote sign out failed");
+    remote.signOut.mockRejectedValue(error);
+    await expect(auth.signOut()).rejects.toBe(error);
+    expect(afterSignOut).not.toHaveBeenCalled();
+    expect(storage.get()).toBe(first.token);
+  });
+
+  it.each(["signIn", "signUp", "restoreSession", "sync", "storage"] as const)(
+    "skips the stale hook after %s supersedes remote sign out",
+    async (operation) => {
+      const afterSignOut = vi.fn();
+      const { auth, remote, storage } = setup(memoryAuthStorage(), {
+        afterSignOut,
+      });
+      await auth.signIn({ email: "first" });
+      const pending = deferred<void>();
+      remote.signOut.mockReturnValue(pending.promise);
+      const stale = auth.signOut();
+      if (operation === "signIn") await auth.signIn({ email: "new" });
+      else if (operation === "signUp") await auth.signUp({ name: "new" });
+      else if (operation === "storage") storage.set(second.token);
+      else await auth[operation]();
+      pending.resolve();
+      await stale;
+      expect(afterSignOut).not.toHaveBeenCalled();
+      expect(storage.get()).not.toBeNull();
+    },
+  );
+
+  it("skips the hook if a subscriber starts a newer authentication operation", async () => {
+    const afterSignOut = vi.fn();
+    const { auth } = setup(memoryAuthStorage(), { afterSignOut });
+    await auth.signIn({ email: "first" });
+    let newer: Promise<Session> | undefined;
+    auth.subscribe((state) => {
+      if (!state.isAuthenticated) newer = auth.signUp({ name: "new" });
+    });
+    await auth.signOut();
+    await newer;
+    expect(afterSignOut).not.toHaveBeenCalled();
+    expect(auth.getSession()).toBe(second);
   });
 });
 
