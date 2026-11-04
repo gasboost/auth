@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  ci:
+  compatibility:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -99,3 +99,12 @@ jobs:
 
       - name: Verify packed packages
         run: pnpm pack:check
+
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    needs: compatibility
+    if: ${{ always() }}
+    steps:
+      - name: Require all SheetORM compatibility checks to pass
+        run: test "${{ needs.compatibility.result }}" = "success"
