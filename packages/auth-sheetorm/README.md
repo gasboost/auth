@@ -143,20 +143,22 @@ export const authTables = createAuthTables({
 
 `@gasboost/auth-sheetorm` は User、Account、PasswordReset の hydrate / persist と transaction 境界を担当します。テーブル定義、`SheetTable` の生成、認証ロジック、password hashing、session management、routing、frontend UI は担当しません。
 
-## 再実行可能な登録（0.4.0）
+## Account 追加（0.4.1）
 
-`repository.user.save(user)` は User とその Account を固定 ID で upsert します。
-`@gasboost/auth >=0.8.0` の `registration.ensure()` に対応し、初期化中の途中失敗から
-同じ User ID / Account ID で復旧できます。`user.create()` は従来どおり新規作成です。
-呼び出し元で Script Lock による排他制御と本人・権限の確認を行ってください。
+`repository.account.create(account)` は既存 User に新しい Account を追加します。
+`@gasboost/auth >=0.9.0` の `auth.account.add(userId, input)` に対応し、User の新規作成や
+既存 Account の更新は行いません。User の存在、Account ID、Identity、同一 User の
+同一方式の重複を transaction 内で検証します。`user.create()` も保存時に Identity 衝突を拒否します。
 
+Bootstrap 用の `user.save()` は削除しました。初期化の再開・保存済み User ID の復旧は
+呼び出し元が行ってください。呼び出し元で管理 API の権限確認を行ってください。
 パスワード設定通知の再発行時には、同じ Account の以前のリセットリンクを無効化します。
 
 ## SheetORM 互換性の検証
 
 通常の開発環境は SheetORM v4 を使用し、CI は v3.1 / v4.0 の両方で
 型チェック・全テスト・ビルド・strict peer install付きの配布Consumer検証を実行します。
-登録の結合テストでは `registration.ensure()` から実際のSheetORMに保存し、
-同じUserへの複数Account登録、途中保存の復旧、通知失敗後の再発行、旧リンク拒否、
+登録の結合テストでは Registration と `account.add()` から実際のSheetORMに保存し、
+同じUserへの複数Account登録、通知失敗後の再発行、旧リンク拒否、
 パスワード再設定後のログインを確認します。
 v4では `SheetDB` に `lockService` を必ず渡してください。v3ではこのオプションは不要です。

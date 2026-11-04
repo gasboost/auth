@@ -271,4 +271,47 @@ describe("AppsScriptAuthSignUp", () => {
     expect(repository.user.create).not.toHaveBeenCalled();
     expect(sessionStorage.save).not.toHaveBeenCalled();
   });
+  it("rejects empty ActiveUser before repository access or session issuance", async () => {
+    const repository = createRepository();
+    const sessionStorage = createSessionStorage();
+    const signUp = new AppsScriptAuthSignUp({
+      repository,
+      sessionStorage,
+      utilities: new NodeUtilities(),
+      expiresIn: 1000,
+      session: createSession(""),
+      appsScript: new AppsScriptAuthenticationConfig({
+        enabled: true,
+        isSignupEnabled: true,
+      }),
+    });
+    await expect(signUp.appsScript({ name: "Visitor" })).rejects.toThrow(
+      "No active user found",
+    );
+    expect(repository.account.findByIdentity).not.toHaveBeenCalled();
+    expect(repository.user.create).not.toHaveBeenCalled();
+    expect(sessionStorage.save).not.toHaveBeenCalled();
+  });
+  it("uses ActiveUser even if an untyped caller supplies a target email and user ID", async () => {
+    const repository = createRepository();
+    const signUp = new AppsScriptAuthSignUp({
+      repository,
+      sessionStorage: createSessionStorage(),
+      utilities: new NodeUtilities(),
+      expiresIn: 1000,
+      session: createSession("visitor@example.com"),
+      appsScript: new AppsScriptAuthenticationConfig({
+        enabled: true,
+        isSignupEnabled: true,
+      }),
+    });
+    const input = {
+      name: "Visitor",
+      email: "admin@example.com",
+      userId: "admin",
+    };
+    const { user } = await signUp.appsScript(input);
+    expect(user.id).not.toBe("admin");
+    expect(user.accounts[0].identity.accountId).toBe("visitor@example.com");
+  });
 });

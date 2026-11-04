@@ -1,9 +1,3 @@
-import {
-  InMemoryContext,
-  InMemorySession,
-  OAuthScope,
-  SecurityPolicy,
-} from "@gasboost/fake-core";
 import { NodeUtilities } from "@gasboost/fake-node";
 import { describe, expect, it, vi } from "vitest";
 
@@ -13,22 +7,6 @@ import type { User } from "../../src/domain/User";
 import { AppsScriptIdentity } from "../../src/identity/AppsScriptIdentity";
 import { AppsScriptRegistration } from "../../src/registration/AppsScriptRegistration";
 import type { AppsScriptAuthRepository } from "../../src/storage/AppsScriptAuthRepository";
-
-function createSession(email: string) {
-  const context = new InMemoryContext(
-    "owner@example.com",
-    email,
-    {
-      type: "WEB_APP",
-      executeAs: "USER",
-    },
-    new SecurityPolicy([OAuthScope.USERINFO_EMAIL]),
-    "ja",
-    "Asia/Tokyo",
-  );
-
-  return new InMemorySession(context);
-}
 
 function createRepository({
   account = null,
@@ -51,18 +29,15 @@ function createRepository({
 }
 
 describe("AppsScriptRegistration", () => {
-  it("ActiveUserからUserとAccountを生成して保存する", async () => {
+  it("指定メールからUserとAccountを生成して保存する", async () => {
     const repository = createRepository();
     const utilities = new NodeUtilities();
 
-    const registration = new AppsScriptRegistration(
-      utilities,
-      createSession("user@example.com"),
-      repository,
-    );
+    const registration = new AppsScriptRegistration(utilities, repository);
 
     const user = await registration.register({
       name: "Taro",
+      email: "user@example.com",
     });
 
     expect(user.name).toBe("Taro");
@@ -97,13 +72,13 @@ describe("AppsScriptRegistration", () => {
 
     const registration = new AppsScriptRegistration(
       new NodeUtilities(),
-      createSession("user@example.com"),
       repository,
     );
 
     await expect(
       registration.register({
         name: "Taro",
+        email: "user@example.com",
       }),
     ).rejects.toThrow("Account already registered");
 
@@ -120,12 +95,12 @@ describe("AppsScriptRegistration", () => {
 
     const registration = new AppsScriptRegistration(
       new NodeUtilities(),
-      createSession("user@example.com"),
       repository,
     );
 
     await registration.register({
       name: "Taro",
+      email: "user@example.com",
     });
 
     expect(repository.account.findByIdentity).toHaveBeenCalledWith(
@@ -134,20 +109,20 @@ describe("AppsScriptRegistration", () => {
     );
   });
 
-  it("ActiveUserのemailが取得できない場合はRepositoryを触らず失敗する", async () => {
+  it("入力emailが空の場合はRepositoryを触らず失敗する", async () => {
     const repository = createRepository();
 
     const registration = new AppsScriptRegistration(
       new NodeUtilities(),
-      createSession(""),
       repository,
     );
 
     await expect(
       registration.register({
         name: "Taro",
+        email: "",
       }),
-    ).rejects.toThrow("No active user found");
+    ).rejects.toThrow("Email is required");
 
     expect(repository.account.findByIdentity).not.toHaveBeenCalled();
 

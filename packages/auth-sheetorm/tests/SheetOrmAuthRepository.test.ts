@@ -249,17 +249,114 @@ describe("SheetOrmAuthRepository", () => {
   });
 });
 
-describe("user.save recovery", () => {
-  it("upserts the same user and both accounts without duplicates", async () => {
-    const { db, repository } = createRepository();
-    const user = createUser();
-    await repository.user.save(
-      new User({ ...user, accounts: user.accounts.slice(0, 1) }),
+describe("account.create", () => {
+  function gasAccount(
+    userId = "user-1",
+    email = "gas@example.com",
+    id = "gas-new",
+  ) {
+    return new Account({
+      id,
+      userId,
+      identity: new AppsScriptIdentity({ googleAccountAddress: email }),
+    });
+  }
+  it("adds to an existing user and preserves its original name and credential", async () => {
+    const { repository, db } = createRepository();
+    const original = createUser();
+    original.accounts.splice(1);
+    await repository.user.create(original);
+    const added = gasAccount();
+    expect(await repository.account.create(added)).toBe(added);
+    const stored = await repository.user.find(original.id);
+    expect(stored?.name).toBe(original.name);
+    expect(stored?.accounts).toHaveLength(2);
+    expect(stored?.account(authPattern.emailPassword)).toEqual(
+      original.accounts[0],
     );
-    await repository.user.save(user);
-    await repository.user.save(user);
+    expect(db.table("user").find()).toHaveLength(1);
+  });
+  it("rejects missing users without writing", async () => {
+    const { repository, db } = createRepository();
+    await expect(repository.account.create(gasAccount())).rejects.toThrow(
+      "User not found",
+    );
+    expect(db.table("account").find()).toEqual([]);
+  });
+  it("rejects identity and provider duplicates, including retry and another user", async () => {
+    const { repository, db } = createRepository();
+    await repository.user.create(createUser());
+    await repository.user.create(
+      new User({ id: "other", name: "Other", accounts: [] }),
+    );
+    const before = db.table("account").find();
+    await expect(
+      repository.account.create(gasAccount("other", "taro@example.com")),
+    ).rejects.toThrow("already registered");
+    await expect(repository.account.create(gasAccount())).rejects.toThrow(
+      "already has an account",
+    );
+    await expect(
+      repository.account.create(gasAccount("user-1", "taro@example.com")),
+    ).rejects.toThrow("already registered");
+    expect(db.table("account").find()).toEqual(before);
+  });
+  it("rejects account ID reuse even with a different provider and user", async () => {
+    const { repository, db } = createRepository();
+    await repository.user.create(createUser());
+    await repository.user.create(
+      new User({ id: "other", name: "Other", accounts: [] }),
+    );
+    await expect(
+      repository.account.create(
+        gasAccount("other", "different@example.com", "account-email"),
+      ),
+    ).rejects.toThrow("Account ID");
+    expect(db.table("account").find()).toHaveLength(2);
+  });
+  it("registration checks collisions in the transaction before creating a user", async () => {
+    const { repository, db } = createRepository();
+    await repository.user.create(createUser());
+    await expect(
+      repository.user.create(
+        new User({
+          id: "other",
+          name: "Other",
+          accounts: [gasAccount("other", "taro@example.com")],
+        }),
+      ),
+    ).rejects.toThrow("already registered");
     expect(db.table("user").find()).toHaveLength(1);
     expect(db.table("account").find()).toHaveLength(2);
-    expect((await repository.user.find(user.id))?.accounts).toHaveLength(2);
+  });
+  it("equal emails across providers remain separate users until explicit linking", async () => {
+    const { repository, db } = createRepository();
+    const original = createUser();
+    original.accounts.splice(1);
+    await repository.user.create(original);
+    await repository.user.create(
+      new User({
+        id: "other",
+        name: "Other",
+        accounts: [gasAccount("other", "taro@example.com")],
+      }),
+    );
+    expect(db.table("user").find()).toHaveLength(2);
+    expect(
+      (
+        await repository.account.findByIdentity(
+          authPattern.emailPassword,
+          "taro@example.com",
+        )
+      )?.userId,
+    ).toBe("user-1");
+    expect(
+      (
+        await repository.account.findByIdentity(
+          authPattern.appsScript,
+          "taro@example.com",
+        )
+      )?.userId,
+    ).toBe("other");
   });
 });

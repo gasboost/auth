@@ -25,6 +25,46 @@ export class SheetOrmAccountRepository<
     public readonly schema: SheetOrmAuthSchema<T, U, A, R>,
   ) {}
 
+  public async create(account: Account): Promise<Account> {
+    const fields = this.schema.account.fields;
+    const userFields = this.schema.user.fields;
+    const record = this.db
+      .definition(this.schema.account.modelName)
+      .schema.parse({
+        [fields.id]: account.id,
+        [fields.userId]: account.userId,
+        [fields.provider]: account.identity.providerName,
+        [fields.providerAccountId]: account.identity.accountId,
+        [fields.passwordHash]:
+          account.identity instanceof EmailPasswordIdentity
+            ? account.identity.password.value
+            : null,
+      });
+    this.db.transaction(() => {
+      const users = this.db.find(
+        this.db
+          .query(this.schema.user.modelName)
+          .and(userFields.id, "=", [account.userId])
+          .limit(1),
+      );
+      if (!users.length) throw new Error("User not found");
+      const accounts = this.db.table(this.schema.account.modelName);
+      const existing = accounts.find();
+      for (const current of existing) {
+        if (current[fields.id] === account.id)
+          throw new Error("Account ID already registered");
+        if (current[fields.provider] !== account.identity.providerName)
+          continue;
+        if (current[fields.providerAccountId] === account.identity.accountId)
+          throw new Error("Account already registered");
+        if (current[fields.userId] === account.userId)
+          throw new Error("User already has an account for this provider");
+      }
+      accounts.create([record]);
+    });
+    return account;
+  }
+
   public async findByIdentity(
     provider: AuthPattern,
     identifier: string,

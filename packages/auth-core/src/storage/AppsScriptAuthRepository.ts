@@ -5,6 +5,8 @@ import type { User } from "../domain/User";
 
 export interface AppsScriptAuthRepository {
   account: {
+    /** Create an account for an existing user. Reject identity, ID and provider duplicates atomically. */
+    create?: (account: Account) => Promise<Account>;
     findByIdentity(
       provider: AuthPattern,
       identifier: string,
@@ -14,8 +16,6 @@ export interface AppsScriptAuthRepository {
   user: {
     find: (id: string) => Promise<User | null>;
     create: (user: User) => Promise<User>;
-    /** Upsert user/accounts by their stable IDs; retries must preserve a single user. */
-    save?: (user: User) => Promise<User>;
   };
 
   passwordCredential: {

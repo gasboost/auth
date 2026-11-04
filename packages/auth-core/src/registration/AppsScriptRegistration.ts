@@ -7,21 +7,17 @@ import type { Registration } from "./Registration";
 
 export interface AppsScriptRegistrationInput {
   readonly name: string;
+  readonly email: string;
 }
 
 export class AppsScriptRegistration implements Registration<AppsScriptRegistrationInput> {
   constructor(
     private readonly utilities: GoogleAppsScript.Utilities.Utilities,
-    private readonly session: GoogleAppsScript.Base.Session,
     private readonly repository: AppsScriptAuthRepository,
   ) {}
   async register(input: AppsScriptRegistrationInput): Promise<User> {
-    // Session.getActiveUser() から識別子取得
-    const email = this.session.getActiveUser().getEmail();
-
-    if (!email) {
-      throw new Error("No active user found");
-    }
+    const email = input.email;
+    if (!email?.trim()) throw new Error("Email is required");
 
     const existingAccount = await this.repository.account.findByIdentity(
       authPattern.appsScript,

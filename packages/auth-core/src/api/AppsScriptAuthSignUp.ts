@@ -16,7 +16,7 @@ import { SignUp } from "./SignUp";
 export class AppsScriptAuthSignUp<THookResult = undefined> {
   public email: SignUp<EmailPasswordRegistrationInput, THookResult>["execute"];
   public appsScript: SignUp<
-    AppsScriptRegistrationInput,
+    Pick<AppsScriptRegistrationInput, "name">,
     THookResult
   >["execute"];
 
@@ -68,19 +68,18 @@ export class AppsScriptAuthSignUp<THookResult = undefined> {
 
       appsScript.ensureSignUpEnabled();
 
+      const email = session.getActiveUser().getEmail();
+      if (!email) throw new Error("No active user found");
+
       const appsScriptSignUp = new SignUp({
         sessionStorage,
         afterSignIn,
         expiresIn,
-        registration: new AppsScriptRegistration(
-          utilities,
-          session,
-          repository,
-        ),
+        registration: new AppsScriptRegistration(utilities, repository),
         utilities,
       });
 
-      return appsScriptSignUp.execute(input);
+      return appsScriptSignUp.execute({ name: input.name, email });
     };
   }
 }

@@ -79,6 +79,22 @@ function createEnabledAuth(): {
 }
 
 describe("handlers", () => {
+  it("exposes only public auth handlers even when account administration exists", () => {
+    const auth = createDisabledAuth();
+    Object.assign(auth, {
+      account: { add: vi.fn() },
+      registration: { appsScript: vi.fn(), email: vi.fn() },
+    });
+    expect(Object.keys(handlers(auth)).sort()).toEqual([
+      "getSession",
+      "signInAppsScript",
+      "signInEmail",
+      "signOut",
+      "signUpAppsScript",
+      "signUpEmail",
+    ]);
+  });
+
   it("getSessionをobject inputへ変換する", async () => {
     const auth = createDisabledAuth();
 
