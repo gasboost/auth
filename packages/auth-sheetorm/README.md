@@ -147,3 +147,5 @@ export const authTables = createAuthTables({
 `@gasboost/auth >=0.8.0` の `registration.ensure()` に対応し、初期化中の途中失敗から
 同じ User ID / Account ID で復旧できます。`user.create()` は従来どおり新規作成です。
 呼び出し元で Script Lock による排他制御と本人・権限の確認を行ってください。
+
+パスワード設定通知の再発行時には、同じ Account の以前のリセットリンクを無効化します。

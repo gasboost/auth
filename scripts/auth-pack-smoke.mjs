@@ -59,7 +59,7 @@ const packages = [
     ],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth": "^0.6.0 || ^0.7.0",
+      "@gasboost/auth": "^0.6.0 || ^0.7.0 || ^0.8.0",
     },
   },
   {
@@ -67,7 +67,7 @@ const packages = [
     directory: join(rootDirectory, "packages", "auth-sheetorm"),
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
-      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0",
+      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0",
       "@gasboost/sheetorm": "^3.1.0",
     },
   },
