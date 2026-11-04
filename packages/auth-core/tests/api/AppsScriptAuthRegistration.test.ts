@@ -33,13 +33,13 @@ function createRepository() {
   } satisfies AppsScriptAuthRepository;
 }
 
-function createSession(email: string) {
+function createSession(email: string, executeAs: "OWNER" | "USER" = "USER") {
   const context = new InMemoryContext(
     "owner@example.com",
     email,
     {
       type: "WEB_APP",
-      executeAs: "USER",
+      executeAs,
     },
     new SecurityPolicy([OAuthScope.USERINFO_EMAIL]),
     "ja",
@@ -61,18 +61,20 @@ function createRegistration({
     isSignupEnabled: false,
   }),
   activeUserEmail = "user@example.com",
+  executeAs = "USER",
 }: {
   repository?: ReturnType<typeof createRepository>;
   emailPassword?: EmailPasswordAuthConfig;
   appsScript?: AppsScriptAuthenticationConfig;
   activeUserEmail?: string;
+  executeAs?: "OWNER" | "USER";
 } = {}) {
   return new AppsScriptAuthRegistration({
     repository,
     emailPassword,
     appsScript,
     utilities: new NodeUtilities(),
-    session: createSession(activeUserEmail),
+    session: createSession(activeUserEmail, executeAs),
   });
 }
 
@@ -405,5 +407,71 @@ describe("registration.ensure", () => {
     await expect(registration.ensure(input)).rejects.toThrow(
       "idempotent user.save",
     );
+  });
+});
+
+describe("registration.ensureEffectiveUser", () => {
+  const input = {
+    id: "owner",
+    name: "Admin",
+    email: "owner@example.com",
+    password: "temporary-secret",
+  };
+  it.each([
+    [true, false, 1],
+    [false, true, 1],
+    [true, true, 2],
+  ])(
+    "provisions the deployment owner with empty ActiveUser (%s, %s)",
+    async (email, gas, count) => {
+      const repository = createRepository();
+      const registration = createRegistration({
+        repository,
+        activeUserEmail: "",
+        executeAs: "OWNER",
+        emailPassword: new EmailPasswordAuthConfig({
+          enabled: !!email,
+          pepper: "pepper",
+          iterations: 1,
+        }),
+        appsScript: new AppsScriptAuthenticationConfig({ enabled: !!gas }),
+      });
+      const user = await registration.ensureEffectiveUser(input);
+      expect(user.accounts).toHaveLength(count as number);
+      expect(
+        user.accounts.every(
+          (account) =>
+            account.userId === input.id &&
+            account.identity.accountId === input.email,
+        ),
+      ).toBe(true);
+      repository.user.find.mockResolvedValue(user);
+      repository.account.findByIdentity.mockImplementation(async (provider) =>
+        user.account(provider),
+      );
+      expect((await registration.ensureEffectiveUser(input)).accounts).toEqual(
+        user.accounts,
+      );
+    },
+  );
+  it("rejects another recipient before any repository access, including email-only auth", async () => {
+    const repository = createRepository();
+    const registration = createRegistration({
+      repository,
+      appsScript: new AppsScriptAuthenticationConfig({ enabled: false }),
+    });
+    await expect(
+      registration.ensureEffectiveUser({
+        ...input,
+        email: "other@example.com",
+      }),
+    ).rejects.toThrow("Effective user");
+    expect(repository.user.find).not.toHaveBeenCalled();
+    expect(repository.account.findByIdentity).not.toHaveBeenCalled();
+    expect(repository.user.save).not.toHaveBeenCalled();
+  });
+  it("keeps the existing ActiveUser policy on ensure()", async () => {
+    const registration = createRegistration({ activeUserEmail: "" });
+    await expect(registration.ensure(input)).rejects.toThrow("Active user");
   });
 });

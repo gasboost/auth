@@ -61,7 +61,7 @@ const packages = [
     ],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth": "^0.6.0 || ^0.7.0 || ^0.8.0",
+      "@gasboost/auth": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
     },
   },
   {
@@ -69,7 +69,7 @@ const packages = [
     directory: join(rootDirectory, "packages", "auth-sheetorm"),
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
-      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0",
+      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
       "@gasboost/sheetorm": "^3.1.0 || ^4.0.0",
     },
   },
@@ -389,6 +389,7 @@ const serverAuth = new AppsScriptAuth({
 void serverAuth.registration.ensure({
   id: "administrator-id", name: "Admin", email: "admin@example.com",
 }).then(user => repository.user.save(user));
+void serverAuth.registration.ensureEffectiveUser({ id: "owner-id", name: "Owner", email: "owner@example.com" });
 const enabled: boolean = serverAuth.registration.methods.appsScript;
 void enabled;
 

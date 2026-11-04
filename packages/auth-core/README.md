@@ -721,3 +721,13 @@ await auth.password?.forgot({ email: Session.getActiveUser().getEmail() });
 `@gasboost/auth-sheetorm >=0.4.0` はこれを実装します。
 既存の `registration.email()` / `.appsScript()` と `user.create()` の動作は変更しません。
 関連: [gasboost/app#64](https://github.com/gasboost/app/issues/64)。
+
+### EffectiveUserの管理用登録（0.9.0）
+
+`auth.registration.ensureEffectiveUser({ id, name, email, password? })` は
+`Session.getEffectiveUser().getEmail()` と `email` の一致を、Repositoryの読取・書込より前に検証します。
+`USER_DEPLOYING` の初期設定用であり、外部アクセス者の本人確認ではありません。
+呼び出し元はメールで届けたトークン等で初期化権限を検証し、排他制御してください。
+ActiveUserが空でも利用できます。既存の `ensure()` のActiveUser検証は変更しません。
+有効方式・固定ID・既存認証情報維持・別Userとの衝突拒否・再実行の規則は両API共通です。
+関連: gasboost/app#66 / gasboost/app#67。

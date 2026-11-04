@@ -89,6 +89,28 @@ export class AppsScriptAuthRegistration {
     email: string;
     password?: string;
   }): Promise<User> {
+    return this.provision(input, "active");
+  }
+
+  /** Privileged server API for token-authorized USER_DEPLOYING setup. Not visitor authentication. */
+  public async ensureEffectiveUser(input: {
+    id: string;
+    name: string;
+    email: string;
+    password?: string;
+  }): Promise<User> {
+    return this.provision(input, "effective");
+  }
+
+  private async provision(
+    input: {
+      id: string;
+      name: string;
+      email: string;
+      password?: string;
+    },
+    identity: "active" | "effective",
+  ): Promise<User> {
     if (!this.methods.emailPassword && !this.methods.appsScript) {
       throw new Error("No authentication method is enabled");
     }
@@ -96,7 +118,11 @@ export class AppsScriptAuthRegistration {
       throw new Error("User ID and email are required");
     if (!this.repository.user.save)
       throw new Error("Repository must support idempotent user.save");
-    if (
+    if (identity === "effective") {
+      const email = this.session.getEffectiveUser().getEmail();
+      if (!email || email !== input.email)
+        throw new Error("Effective user does not match registration email");
+    } else if (
       this.methods.appsScript &&
       this.session.getActiveUser().getEmail() !== input.email
     ) {
