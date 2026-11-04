@@ -5,7 +5,8 @@
     "moduleResolution": "nodenext",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["google-apps-script"]
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]
 }

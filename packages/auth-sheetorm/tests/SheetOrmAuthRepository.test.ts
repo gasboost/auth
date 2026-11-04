@@ -7,13 +7,12 @@ import {
   authPattern,
   createAuthTables,
 } from "@gasboost/auth";
-import { InMemoryCacheService } from "@gasboost/fake-core";
-import { NodeUtilities } from "@gasboost/fake-node";
 import { SheetDB, SheetTable } from "@gasboost/sheetorm";
 import { describe, expect, it, vi } from "vitest";
 
 import { SheetOrmAuthRepository } from "../src/SheetOrmAuthRepository";
 import { TestGateway } from "./TestGateway";
+import { createRuntime } from "./runtime";
 
 function createRepository() {
   const definitions = createAuthTables();
@@ -28,8 +27,7 @@ function createRepository() {
   const db = new SheetDB({
     tables,
     gateway,
-    cacheService: new InMemoryCacheService(),
-    utilities: new NodeUtilities(),
+    ...createRuntime(),
   });
 
   const repository = new SheetOrmAuthRepository({
@@ -248,5 +246,20 @@ describe("SheetOrmAuthRepository", () => {
 
       expect(transactionCallOrder).toBeLessThan(secondCreateCallOrder);
     });
+  });
+});
+
+describe("user.save recovery", () => {
+  it("upserts the same user and both accounts without duplicates", async () => {
+    const { db, repository } = createRepository();
+    const user = createUser();
+    await repository.user.save(
+      new User({ ...user, accounts: user.accounts.slice(0, 1) }),
+    );
+    await repository.user.save(user);
+    await repository.user.save(user);
+    expect(db.table("user").find()).toHaveLength(1);
+    expect(db.table("account").find()).toHaveLength(2);
+    expect((await repository.user.find(user.id))?.accounts).toHaveLength(2);
   });
 });

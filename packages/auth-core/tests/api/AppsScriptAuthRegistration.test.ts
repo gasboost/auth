@@ -24,6 +24,7 @@ function createRepository() {
     user: {
       find: vi.fn().mockResolvedValue(null),
       create: vi.fn(async (user: User) => user),
+      save: vi.fn(async (user: User) => user),
     },
     passwordCredential: {
       findByResetTokenHash: vi.fn().mockResolvedValue(null),
@@ -309,5 +310,100 @@ describe("AppsScriptAuthRegistration", () => {
 
       expect(repository.user.create).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("registration.ensure", () => {
+  const input = {
+    id: "bootstrap-user",
+    name: "Admin",
+    email: "user@example.com",
+    password: "random-temporary-secret",
+  };
+  it.each([
+    [true, false, 1],
+    [false, true, 1],
+    [true, true, 2],
+  ])("enabled email=%s GAS=%s", async (email, gas, count) => {
+    const repository = createRepository();
+    const registration = createRegistration({
+      repository,
+      emailPassword: new EmailPasswordAuthConfig({
+        enabled: !!email,
+        pepper: "pepper",
+        iterations: 1,
+      }),
+      appsScript: new AppsScriptAuthenticationConfig({ enabled: !!gas }),
+    });
+    const user = await registration.ensure(input);
+    expect(user.id).toBe(input.id);
+    expect(user.accounts).toHaveLength(count as number);
+    expect(user.accounts.every((account) => account.userId === input.id)).toBe(
+      true,
+    );
+    expect(new Set(user.accounts.map((account) => account.id)).size).toBe(
+      count,
+    );
+    expect(repository.user.create).not.toHaveBeenCalled();
+    repository.user.find.mockResolvedValue(user);
+    repository.account.findByIdentity.mockImplementation(async (provider) =>
+      user.account(provider),
+    );
+    const retried = await registration.ensure({
+      ...input,
+      password: "different",
+    });
+    expect(retried.accounts).toEqual(user.accounts);
+  });
+  it("repairs missing accounts with stable IDs after a partial write", async () => {
+    const repository = createRepository();
+    const registration = createRegistration({ repository });
+    const user = await registration.ensure(input);
+    repository.user.find.mockResolvedValue(
+      new User({ ...user, accounts: user.accounts.slice(0, 1) }),
+    );
+    const retried = await registration.ensure(input);
+    expect(retried.accounts.map((account) => account.id)).toEqual(
+      user.accounts.map((account) => account.id),
+    );
+    expect(retried.accounts[0]).toBe(user.accounts[0]);
+  });
+  it("rejects disabled methods", async () => {
+    const repository = createRepository();
+    const registration = createRegistration({
+      repository,
+      emailPassword: new EmailPasswordAuthConfig({
+        enabled: false,
+        pepper: "",
+      }),
+      appsScript: new AppsScriptAuthenticationConfig({ enabled: false }),
+    });
+    await expect(registration.ensure(input)).rejects.toThrow(
+      "No authentication method",
+    );
+    expect(repository.user.save).not.toHaveBeenCalled();
+  });
+  it("rejects an identity belonging to another user", async () => {
+    const repository = createRepository();
+    const registration = createRegistration({ repository });
+    const user = await registration.ensure(input);
+    repository.account.findByIdentity.mockResolvedValue({
+      ...user.accounts[0],
+      userId: "other",
+    });
+    repository.user.save.mockClear();
+    await expect(registration.ensure(input)).rejects.toThrow("another user");
+    expect(repository.user.save).not.toHaveBeenCalled();
+  });
+  it("requires matching active user for GAS, and repository save support", async () => {
+    await expect(
+      createRegistration({ activeUserEmail: "" }).ensure(input),
+    ).rejects.toThrow("Active user");
+    const repository = createRepository();
+    const registration = createRegistration({ repository });
+    delete (repository.user as { save?: unknown }).save;
+    await expect(registration.ensure(input)).rejects.toThrow(
+      "idempotent user.save",
+    );
   });
 });

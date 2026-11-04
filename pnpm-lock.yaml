@@ -127,11 +127,14 @@ importers:
         specifier: ^0.1.2
         version: 0.1.2
       '@gasboost/fake-node':
-        specifier: ^0.1.2
-        version: 0.1.2(date-fns@4.4.0)
+        specifier: ^0.3.0
+        version: 0.3.0(date-fns@4.4.0)
       '@gasboost/sheetorm':
-        specifier: ^3.1.0
-        version: 3.1.0(zod@4.5.4)
+        specifier: ^4.0.0
+        version: 4.0.0(zod@4.5.4)
+      '@types/google-apps-script':
+        specifier: ^2.0.13
+        version: 2.0.13
 
 packages:
 
@@ -189,11 +192,17 @@ packages:
   '@gasboost/fake-core@0.1.2':
     resolution: {integrity: sha512-FYicRmQK21hyUV31S1Ed6/GFtReL8Vv96rc3tQhJk3vQ5G+Y31GfCnX78CxuhyS45Gg+tOnkGLzByvK5EP38aQ==}
 
+  '@gasboost/fake-core@0.4.0':
+    resolution: {integrity: sha512-7lcKOCEKBEsgXh31MXrNM4ehHuVjpR0UNVkTcahGcPLV3J/eVhcGwW5ZroRCtwKylKvJKW/V1i8pZ/smiHmRzQ==}
+
   '@gasboost/fake-node@0.1.2':
     resolution: {integrity: sha512-OJrPW+cG7TESUVuNmG6+QXa1RR1GohH3R1dxLFpXLhzYeHtETiBRoIcru+kIn6kh445UKzOp+2O0OWlzmPBJ+Q==}
 
-  '@gasboost/query@1.1.1':
-    resolution: {integrity: sha512-9B75V4x8epOdeb5TzEeggfrTFvKPeulXeQkJb+hJdEM6gyHSjz8lwD9ubCLK/LINcIgmfkrVhYTcFYTtaPlb8w==}
+  '@gasboost/fake-node@0.3.0':
+    resolution: {integrity: sha512-iBTUo/cIntbI5Eqnnh7GfpI+yDrk4uhCKgEPdfPuIftfZjBIByrecHluQjAoTVrnsmpTEWXc6HaAGqEk7R0rGQ==}
+
+  '@gasboost/query@1.2.0':
+    resolution: {integrity: sha512-WaNAWmUmO0RBZ+nJXvONj5Mzp3O7VqjIcLlNch0O+67qQd5sXSZ0g4epTIp4iyjvDH5ah40BZO7JFCReH9zwPA==}
 
   '@gasboost/realtime-firebase@0.2.0':
     resolution: {integrity: sha512-B4GAykPM2H0AN3EzA9BYduzN2lSZ/pBBfuyzUyg98qQDfO8bNA3m9bwI/ALe9kCQ9xYO8rsHkM81mEQJp3Pvcw==}
@@ -206,13 +215,18 @@ packages:
     peerDependencies:
       zod: ^4.5.4
 
-  '@gasboost/sheetorm@3.1.0':
-    resolution: {integrity: sha512-HoltI5NK87NHsG4ypBmzVan9C7Huc9t95+ibYAfY3PQ8xjEtPXJDStVc0DvNForM8DVZDgoWD5i4cLT12JVlGQ==}
+  '@gasboost/sheetorm@4.0.0':
+    resolution: {integrity: sha512-QE+qhK4nFFCMwqDS87AyPlfBvRSUoR950fxix7qQAfULmBMVtX3RRhj2gciHVsUipPyqrRlPmcAbcrze683O0Q==}
     peerDependencies:
       zod: ^4.5.4
 
   '@gasboost/table@0.1.0':
     resolution: {integrity: sha512-eJ0QNsbYSB/MB+XGLw5jiTVqL6I26+9HiZ6Uj4TmU9tGHQfiJl21EWgUgDr1HHtjxYKrVA3V12ShRWnni82/6A==}
+    peerDependencies:
+      zod: ^4.5.4
+
+  '@gasboost/table@0.2.0':
+    resolution: {integrity: sha512-kZxYjHR3wclyk2g/jh9JHA8odyI177SUtAziRy1Ae3vuOpE1SnVAgX8kV1O+NPH+pqlFC/RswDvWSm2bKHF89Q==}
     peerDependencies:
       zod: ^4.5.4
 
@@ -1153,6 +1167,8 @@ snapshots:
 
   '@gasboost/fake-core@0.1.2': {}
 
+  '@gasboost/fake-core@0.4.0': {}
+
   '@gasboost/fake-node@0.1.2(date-fns@4.4.0)':
     dependencies:
       '@gasboost/fake-core': 0.1.2
@@ -1161,9 +1177,17 @@ snapshots:
     transitivePeerDependencies:
       - date-fns
 
-  '@gasboost/query@1.1.1(zod@4.5.4)':
+  '@gasboost/fake-node@0.3.0(date-fns@4.4.0)':
     dependencies:
-      '@gasboost/table': 0.1.0(zod@4.5.4)
+      '@gasboost/fake-core': 0.4.0
+      date-fns-tz: 3.2.0(date-fns@4.4.0)
+      fflate: 0.8.3
+    transitivePeerDependencies:
+      - date-fns
+
+  '@gasboost/query@1.2.0(zod@4.5.4)':
+    dependencies:
+      '@gasboost/table': 0.2.0(zod@4.5.4)
     transitivePeerDependencies:
       - zod
 
@@ -1181,14 +1205,18 @@ snapshots:
       '@gasboost/table': 0.1.0(zod@4.5.4)
       zod: 4.5.4
 
-  '@gasboost/sheetorm@3.1.0(zod@4.5.4)':
+  '@gasboost/sheetorm@4.0.0(zod@4.5.4)':
     dependencies:
-      '@gasboost/query': 1.1.1(zod@4.5.4)
+      '@gasboost/query': 1.2.0(zod@4.5.4)
       '@gasboost/rls': 0.3.1(zod@4.5.4)
-      '@gasboost/table': 0.1.0(zod@4.5.4)
+      '@gasboost/table': 0.2.0(zod@4.5.4)
       zod: 4.5.4
 
   '@gasboost/table@0.1.0(zod@4.5.4)':
+    dependencies:
+      zod: 4.5.4
+
+  '@gasboost/table@0.2.0(zod@4.5.4)':
     dependencies:
       zod: 4.5.4
 

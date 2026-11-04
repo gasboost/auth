@@ -7,13 +7,13 @@ import {
   authPattern,
   createAuthTables,
 } from "@gasboost/auth";
-import { InMemoryCacheService } from "@gasboost/fake-core";
 import { NodeUtilities } from "@gasboost/fake-node";
 import { SheetDB, SheetTable } from "@gasboost/sheetorm";
 import { describe, expect, it, vi } from "vitest";
 
 import { SheetOrmAuthRepository } from "../src/SheetOrmAuthRepository";
 import { TestGateway } from "./TestGateway";
+import { createRuntime } from "./runtime";
 
 function createRepository() {
   const definitions = createAuthTables();
@@ -28,8 +28,7 @@ function createRepository() {
   const db = new SheetDB({
     tables,
     gateway,
-    cacheService: new InMemoryCacheService(),
-    utilities,
+    ...createRuntime(utilities),
   });
 
   const repository = new SheetOrmAuthRepository({
@@ -405,4 +404,31 @@ describe("SheetOrmPasswordCredentialRepository", () => {
       repository.passwordCredential.save(credential),
     ).rejects.toThrow("Invalid account identity");
   });
+});
+
+it("reissued reset links invalidate previous links for the same account", async () => {
+  const { db, repository, utilities } = createRepository();
+  const account = createAccount();
+  await seedAccount({ db, account });
+  const first = PasswordCredential.generate({
+    account,
+    utilities,
+    expiresAt: new Date(Date.now() + 60000),
+  });
+  const second = PasswordCredential.generate({
+    account,
+    utilities,
+    expiresAt: new Date(Date.now() + 60000),
+  });
+  await repository.passwordCredential.save(first.credential);
+  await repository.passwordCredential.save(second.credential);
+  const old = await repository.passwordCredential.findByResetTokenHash(
+    first.credential.reset!.tokenHash,
+  );
+  expect(old?.reset?.enabled).toBe(false);
+  const current = await repository.passwordCredential.findByResetTokenHash(
+    second.credential.reset!.tokenHash,
+  );
+  expect(current?.reset?.enabled).toBe(true);
+  expect(db.table("account").find()).toHaveLength(1);
 });

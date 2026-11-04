@@ -131,6 +131,28 @@ export class SheetOrmPasswordCredentialRepository<
       this.db.table(this.schema.account.modelName).update([accountRecord]);
 
       if (resetRecord) {
+        // A reissued setup/reset link supersedes earlier links for this account.
+        if (credential.reset?.enabled) {
+          const previous = this.db
+            .find(
+              this.db
+                .query<R>(this.schema.passwordReset.modelName)
+                .and(resetFields.accountId, "=", [credential.account.id]),
+            )
+            .filter(
+              (record) =>
+                record[resetFields.id] !== credential.reset!.id &&
+                record[resetFields.enabled],
+            );
+          if (previous.length > 0) {
+            this.db.table(this.schema.passwordReset.modelName).update(
+              previous.map((record) => ({
+                ...record,
+                [resetFields.enabled]: false,
+              })),
+            );
+          }
+        }
         this.db
           .table(this.schema.passwordReset.modelName)
           .upsert([resetRecord]);
