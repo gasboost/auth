@@ -119,6 +119,14 @@ export class SheetOrmUserRepository<
   }
 
   public async create(user: User): Promise<User> {
+    return this.persist(user, false);
+  }
+
+  public async save(user: User): Promise<User> {
+    return this.persist(user, true);
+  }
+
+  private async persist(user: User, upsert: boolean): Promise<User> {
     const userFields = this.schema.user.fields;
     const accountFields = this.schema.account.fields;
 
@@ -145,10 +153,14 @@ export class SheetOrmUserRepository<
     );
 
     this.db.transaction(() => {
-      this.db.table(this.schema.user.modelName).create([userRecord]);
+      const users = this.db.table(this.schema.user.modelName);
+      if (upsert) users.upsert([userRecord]);
+      else users.create([userRecord]);
 
       if (accountRecords.length > 0) {
-        this.db.table(this.schema.account.modelName).create(accountRecords);
+        const accounts = this.db.table(this.schema.account.modelName);
+        if (upsert) accounts.upsert(accountRecords);
+        else accounts.create(accountRecords);
       }
     });
 

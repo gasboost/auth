@@ -140,3 +140,10 @@ export const authTables = createAuthTables({
 ## Responsibilities
 
 `@gasboost/auth-sheetorm` は User、Account、PasswordReset の hydrate / persist と transaction 境界を担当します。テーブル定義、`SheetTable` の生成、認証ロジック、password hashing、session management、routing、frontend UI は担当しません。
+
+## 再実行可能な登録（0.4.0）
+
+`repository.user.save(user)` は User とその Account を固定 ID で upsert します。
+`@gasboost/auth >=0.8.0` の `registration.ensure()` に対応し、初期化中の途中失敗から
+同じ User ID / Account ID で復旧できます。`user.create()` は従来どおり新規作成です。
+呼び出し元で Script Lock による排他制御と本人・権限の確認を行ってください。

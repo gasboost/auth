@@ -691,3 +691,33 @@ const auth = new AppsScriptAuth({
 ## License
 
 MIT
+
+### 再実行可能な複数認証方式の登録（0.8.0）
+
+`registration.methods` は設定の `enabled` を返します。
+`registration.ensure({ id, name, email, password? })` は、その全認証方式を
+同じ User ID に登録します。通常の signup 設定とは独立した、サーバー側の管理用 API です。
+呼び出し元で権限を検証し、Script Lock などで登録全体を排他制御してください。
+Apps Script 認証が有効なら `email` は `Session.getActiveUser().getEmail()` と一致する必要があります。
+
+```ts
+const user = await auth.registration.ensure({
+  id: recovery.userId, // 初回書き込み前に永続化した固定 ID
+  name: "システム管理者",
+  email: Session.getActiveUser().getEmail(),
+  password: Utilities.getUuid() + Utilities.getUuid(),
+});
+// Email が有効な場合は password reset delivery で本人に設定を促す。
+await auth.password?.forgot({ email: Session.getActiveUser().getEmail() });
+```
+
+既存の認証情報は維持し、不足する Account だけを固定 ID で追加します。
+別 User が所有するメールアドレスは取り込みません。仮パスワードを本人へ送信しないでください。
+メール通知失敗時は `password.forgot()` を再実行して新しいリセットトークンを送れます。
+再発行すると以前のリセットトークンは失効します。
+
+この API は Repository の任意メソッド `user.save(user)` を必要とします。
+実装は User と各 Account を ID で upsert し、途中失敗後も同じ ID で修復できる必要があります。
+`@gasboost/auth-sheetorm >=0.4.0` はこれを実装します。
+既存の `registration.email()` / `.appsScript()` と `user.create()` の動作は変更しません。
+関連: [gasboost/app#64](https://github.com/gasboost/app/issues/64)。
