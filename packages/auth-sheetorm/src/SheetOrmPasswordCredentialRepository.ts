@@ -145,14 +145,12 @@ export class SheetOrmPasswordCredentialRepository<
                 record[resetFields.enabled],
             );
           if (previous.length > 0) {
-            this.db
-              .table(this.schema.passwordReset.modelName)
-              .update(
-                previous.map((record) => ({
-                  ...record,
-                  [resetFields.enabled]: false,
-                })),
-              );
+            this.db.table(this.schema.passwordReset.modelName).update(
+              previous.map((record) => ({
+                ...record,
+                [resetFields.enabled]: false,
+              })),
+            );
           }
         }
         this.db
