@@ -12,6 +12,11 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sheetorm: ["3.1.0", "4.0.0"]
+    env:
+      GASBOOST_SHEETORM_VERSION: ${{ matrix.sheetorm }}
 
     steps:
       - name: Checkout
@@ -31,6 +36,10 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Select SheetORM compatibility version
+        if: matrix.sheetorm != '4.0.0'
+        run: pnpm --filter @gasboost/auth-sheetorm add -D @gasboost/sheetorm@${{ matrix.sheetorm }}
 
       - name: Verify TypeScript version
         run: |

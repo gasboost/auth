@@ -1,6 +1,7 @@
 # @gasboost/auth-sheetorm
 
-`0.3.1` は `@gasboost/auth` の `^0.5.0 || ^0.6.0 || ^0.7.0` をpeer依存として受け入れます。
+`0.4.0` は `@gasboost/auth` の `^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0` と、
+`@gasboost/sheetorm` の `^3.1.0 || ^4.0.0` を peer 依存として受け入れます。
 
 `@gasboost/auth` の Repository を `@gasboost/sheetorm` で実装する adapter package です。
 認証テーブルの論理定義は `@gasboost/auth`、`SheetTable` への具体化は application の Backend が担当します。
@@ -71,6 +72,7 @@ export const db = new SheetDB({
   gateway,
   cacheService: CacheService,
   utilities: Utilities,
+  lockService: LockService, // SheetORM v4で必須
 });
 ```
 
@@ -149,3 +151,12 @@ export const authTables = createAuthTables({
 呼び出し元で Script Lock による排他制御と本人・権限の確認を行ってください。
 
 パスワード設定通知の再発行時には、同じ Account の以前のリセットリンクを無効化します。
+
+## SheetORM 互換性の検証
+
+通常の開発環境は SheetORM v4 を使用し、CI は v3.1 / v4.0 の両方で
+型チェック・全テスト・ビルド・strict peer install付きの配布Consumer検証を実行します。
+登録の結合テストでは `registration.ensure()` から実際のSheetORMに保存し、
+同じUserへの複数Account登録、途中保存の復旧、通知失敗後の再発行、旧リンク拒否、
+パスワード再設定後のログインを確認します。
+v4では `SheetDB` に `lockService` を必ず渡してください。v3ではこのオプションは不要です。

@@ -15,6 +15,8 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 
 const rootDirectory = resolve(scriptDirectory, "..");
 
+const sheetormVersion = process.env.GASBOOST_SHEETORM_VERSION ?? "^4.0.0";
+
 const packages = [
   {
     name: "@gasboost/auth",
@@ -68,7 +70,7 @@ const packages = [
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
       "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0",
-      "@gasboost/sheetorm": "^3.1.0",
+      "@gasboost/sheetorm": "^3.1.0 || ^4.0.0",
     },
   },
   {
@@ -224,7 +226,7 @@ try {
             "@gasboost/auth-sheetorm",
           )}`,
           "@gasboost/realtime-firebase": "^0.2.0",
-          "@gasboost/sheetorm": "^3.1.0",
+          "@gasboost/sheetorm": sheetormVersion,
           typescript: "^7.0.0-dev.20260901",
         },
         pnpm: {
@@ -347,6 +349,7 @@ const db = new SheetDB({
   gateway: {} as never,
   cacheService: {} as never,
   utilities: {} as never,
+  ...{ lockService: {} as never },
 });
 
 const repository =
@@ -381,6 +384,13 @@ const serverAuth = new AppsScriptAuth({
     storageType: "cache",
   },
 });
+
+// Compile the new provisioning API against the packed SheetORM adapter.
+void serverAuth.registration.ensure({
+  id: "administrator-id", name: "Admin", email: "admin@example.com",
+}).then(user => repository.user.save(user));
+const enabled: boolean = serverAuth.registration.methods.appsScript;
+void enabled;
 
 const metadata = {
   [AUTH_METADATA_KEY]: { token: "session-id" } satisfies AuthMetadata,

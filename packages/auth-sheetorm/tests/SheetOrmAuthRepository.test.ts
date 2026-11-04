@@ -7,13 +7,12 @@ import {
   authPattern,
   createAuthTables,
 } from "@gasboost/auth";
-import { InMemoryCacheService } from "@gasboost/fake-core";
-import { NodeUtilities } from "@gasboost/fake-node";
 import { SheetDB, SheetTable } from "@gasboost/sheetorm";
 import { describe, expect, it, vi } from "vitest";
 
 import { SheetOrmAuthRepository } from "../src/SheetOrmAuthRepository";
 import { TestGateway } from "./TestGateway";
+import { createRuntime } from "./runtime";
 
 function createRepository() {
   const definitions = createAuthTables();
@@ -28,8 +27,7 @@ function createRepository() {
   const db = new SheetDB({
     tables,
     gateway,
-    cacheService: new InMemoryCacheService(),
-    utilities: new NodeUtilities(),
+    ...createRuntime(),
   });
 
   const repository = new SheetOrmAuthRepository({

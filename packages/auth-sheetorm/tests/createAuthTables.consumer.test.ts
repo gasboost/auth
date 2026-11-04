@@ -1,11 +1,10 @@
 import { createAuthTables } from "@gasboost/auth";
-import { InMemoryCacheService } from "@gasboost/fake-core";
-import { NodeUtilities } from "@gasboost/fake-node";
 import { SheetDB, SheetTable } from "@gasboost/sheetorm";
 import { describe, expect, it } from "vitest";
 
 import { SheetOrmAuthRepository } from "../src";
 import { TestGateway } from "./TestGateway";
+import { createRuntime } from "./runtime";
 
 describe("createAuthTables consumer", () => {
   it("shared definitionをSheetTable化してrepositoryへ接続できる", () => {
@@ -27,8 +26,7 @@ describe("createAuthTables consumer", () => {
     const db = new SheetDB({
       tables,
       gateway: new TestGateway(),
-      cacheService: new InMemoryCacheService(),
-      utilities: new NodeUtilities(),
+      ...createRuntime(),
     });
 
     const repository = new SheetOrmAuthRepository({
