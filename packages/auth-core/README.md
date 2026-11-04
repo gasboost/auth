@@ -281,12 +281,13 @@ const user = await auth.registration.email({
 ```ts
 const user = await auth.registration.appsScript({
   name: "Taro",
+  email: "taro@example.com",
 });
 ```
 
-Apps Script方式では
-`Session.getActiveUser().getEmail()` を使用するため、
-任意の他ユーザーを指定して登録することはできません。
+Registration は指定された対象者の新規 User と最初の Account を作成します。
+Session は参照しません。同じ provider / email の重複は拒否し、
+別方式の User とメールが一致しても自動統合しません。
 
 ### Sign Upとの違い
 
@@ -692,32 +693,55 @@ const auth = new AppsScriptAuth({
 
 MIT
 
-### 再実行可能な複数認証方式の登録（0.8.0）
+## 既存 User への Account 追加（0.9.0）
 
 `registration.methods` は設定の `enabled` を返します。
-`registration.ensure({ id, name, email, password? })` は、その全認証方式を
-同じ User ID に登録します。通常の signup 設定とは独立した、サーバー側の管理用 API です。
-呼び出し元で権限を検証し、Script Lock などで登録全体を排他制御してください。
-Apps Script 認証が有効なら `email` は `Session.getActiveUser().getEmail()` と一致する必要があります。
+`auth.account.add(userId, input)` は明示した既存 User に Account を追加して返します。
+新規 User や Session は作成せず、`isSignupEnabled` に依存しません。
+同一 Identity の重複、他 User の Identity、同じ User の同一方式の追加は拒否します。
+対象の認証方式は `enabled: true` が必要です。
 
 ```ts
-const user = await auth.registration.ensure({
-  id: recovery.userId, // 初回書き込み前に永続化した固定 ID
-  name: "システム管理者",
-  email: Session.getActiveUser().getEmail(),
-  password: Utilities.getUuid() + Utilities.getUuid(),
-});
-// Email が有効な場合は password reset delivery で本人に設定を促す。
-await auth.password?.forgot({ email: Session.getActiveUser().getEmail() });
+// 呼び出し元で初期化権限・実行主体を検証した後に実行
+const email = Session.getEffectiveUser().getEmail();
+const user = auth.registration.methods.appsScript
+  ? await auth.registration.appsScript({ name: "システム管理者", email })
+  : await auth.registration.email({
+      name: "システム管理者",
+      email,
+      password: temporaryPassword,
+    });
+
+if (
+  auth.registration.methods.appsScript &&
+  auth.registration.methods.emailPassword
+) {
+  await auth.account.add(user.id, {
+    provider: "emailPassword",
+    email,
+    password: temporaryPassword,
+  });
+}
+// Apps Script Account を既存 User に追加する場合:
+// await auth.account.add(userId, { provider: "appsScript", email });
 ```
 
-既存の認証情報は維持し、不足する Account だけを固定 ID で追加します。
-別 User が所有するメールアドレスは取り込みません。仮パスワードを本人へ送信しないでください。
-メール通知失敗時は `password.forgot()` を再実行して新しいリセットトークンを送れます。
-再発行すると以前のリセットトークンは失効します。
+メールとパスワードの Account は新しい Account ID を salt としてパスワードをハッシュ化します。
+既存 Account や User 名は変更しません。
+呼び出し元で対象 User への追加権限を検証してください。
+`@gasboost/auth-app` の `handlers(auth)` はこの管理用 API を RPC に公開しません。
+公開 `signUp.appsScript({ name })` は引き続き ActiveUser を登録し、Session を発行します。
 
-この API は Repository の任意メソッド `user.save(user)` を必要とします。
-実装は User と各 Account を ID で upsert し、途中失敗後も同じ ID で修復できる必要があります。
-`@gasboost/auth-sheetorm >=0.4.0` はこれを実装します。
-既存の `registration.email()` / `.appsScript()` と `user.create()` の動作は変更しません。
-関連: [gasboost/app#64](https://github.com/gasboost/app/issues/64)。
+### Repository と移行
+
+0.9.0 では `registration.appsScript({ name })` を `{ name, email }` に変更しました。
+0.8.0 の `registration.ensure()` と任意の `repository.user.save()` は削除しました。
+旧 PR の EffectiveUser 専用登録経路も提供しません。
+通常の `registration.email()` と公開 SignUp の契約は維持します。
+
+Account 追加には任意の Repository メソッド `account.create(account): Promise<Account>` が必要です。
+未対応の Repository は既存 API を継続利用でき、`account.add` 呼び出し時にエラーになります。
+実装は存在する User への追加だけを許可し、Account ID・Identity・User ごとの同一方式の重複を
+保存と同じ transaction 内で再検証してください。`@gasboost/auth-sheetorm >=0.4.1` が対応します。
+複数 API にまたがる初期化の排他制御、途中失敗時の保存済み User ID の復旧や
+再開処理は呼び出し元（Bootstrap 等）の責務です。

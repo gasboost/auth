@@ -61,7 +61,7 @@ const packages = [
     ],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth": "^0.6.0 || ^0.7.0 || ^0.8.0",
+      "@gasboost/auth": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
     },
   },
   {
@@ -69,7 +69,7 @@ const packages = [
     directory: join(rootDirectory, "packages", "auth-sheetorm"),
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
-      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0",
+      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
       "@gasboost/sheetorm": "^3.1.0 || ^4.0.0",
     },
   },
@@ -385,10 +385,23 @@ const serverAuth = new AppsScriptAuth({
   },
 });
 
-// Compile the new provisioning API against the packed SheetORM adapter.
-void serverAuth.registration.ensure({
-  id: "administrator-id", name: "Admin", email: "admin@example.com",
-}).then(user => repository.user.save(user));
+// Compile registration, account linking, and the unchanged public SignUp contract.
+void serverAuth.registration.appsScript({ name: "Admin", email: "admin@example.com" })
+  .then(user => serverAuth.account.add(user.id, {
+    provider: "emailPassword", email: "admin@example.com", password: "temporary-secret",
+  }));
+void serverAuth.account.add("user-id", { provider: "appsScript", email: "admin@example.com" });
+// @ts-expect-error Registration requires an explicit target email
+void serverAuth.registration.appsScript({ name: "Admin" });
+// @ts-expect-error Email/password account requires a password
+void serverAuth.account.add("user-id", { provider: "emailPassword", email: "admin@example.com" });
+// @ts-expect-error Removed bootstrap-specific API
+void serverAuth.registration.ensure({});
+// @ts-expect-error Removed privileged effective-user API
+void serverAuth.registration.ensureEffectiveUser({});
+void serverAuth.signUp.appsScript({ name: "Visitor" });
+// @ts-expect-error Public signup cannot select another user or email
+void serverAuth.signUp.appsScript({ name: "Visitor", email: "other@example.com", userId: "other" });
 const enabled: boolean = serverAuth.registration.methods.appsScript;
 void enabled;
 
@@ -406,6 +419,11 @@ const app = new AppsScript()
     name: input.name,
     userId: context.state.get("session").userId,
   }));
+// @ts-expect-error Account administration is not exposed as public RPC
+const forbiddenRpc: keyof InferAppsScript<typeof app> = "addAccount";
+void forbiddenRpc;
+// @ts-expect-error No account API is included in handlers
+void handlers(serverAuth).account;
 const input: InferAppsScript<typeof app>["updateProfile"]["input"] = { name: "Taro" };
 void app.dispatch("updateProfile", input, metadata);
 const storage: AuthStorage = memoryAuthStorage();

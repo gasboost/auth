@@ -1,4 +1,4 @@
-import { AppsScriptAuth, User, createAuthTables } from "@gasboost/auth";
+import { AppsScriptAuth, createAuthTables } from "@gasboost/auth";
 import { SheetDB, SheetTable } from "@gasboost/sheetorm";
 import { describe, expect, it, vi } from "vitest";
 
@@ -6,14 +6,15 @@ import { SheetOrmAuthRepository } from "../src";
 import { createRuntime } from "./runtime";
 import { TestGateway } from "./TestGateway";
 
-describe("Auth provisioning with the installed SheetORM version", () => {
+describe("Registration and account linking with the installed SheetORM version", () => {
   it.each([
-    [true, false],
-    [false, true],
-    [true, true],
+    [true, false, false],
+    [false, true, true],
+    [true, true, true],
+    [true, true, false],
   ])(
-    "recovers one User with enabled accounts: email=%s GAS=%s",
-    async (emailPassword, appsScript) => {
+    "creates one User: email=%s GAS=%s GAS first=%s",
+    async (emailPassword, appsScript, appsScriptFirst) => {
       const definitions = createAuthTables();
       const runtime = createRuntime();
       const db = new SheetDB({
@@ -34,14 +35,19 @@ describe("Auth provisioning with the installed SheetORM version", () => {
       const delivery = {
         send: vi.fn(async (_message: { token: string }) => {}),
       };
+      const getActiveUser = vi.fn(() => ({ getEmail: () => email }));
+      const getEffectiveUser = vi.fn(() => {
+        throw new Error("must not read EffectiveUser");
+      });
       const auth = new AppsScriptAuth({
         repository,
         session: { storageType: "cache" },
         runtime: {
           ...runtime,
           session: {
-            getActiveUser: () => ({ getEmail: () => email }),
-          } as GoogleAppsScript.Base.Session,
+            getActiveUser,
+            getEffectiveUser,
+          } as unknown as GoogleAppsScript.Base.Session,
           propertiesService:
             {} as GoogleAppsScript.Properties.PropertiesService,
         },
@@ -53,21 +59,23 @@ describe("Auth provisioning with the installed SheetORM version", () => {
         },
         appsScript: { enabled: appsScript },
       });
-      // Recover a user-row write that stopped before the accounts were persisted.
-      await repository.user.save(
-        new User({ id: "admin", name: "Admin", accounts: [] }),
-      );
-      const input = {
-        id: "admin",
-        name: "Admin",
-        email,
-        password: "temporary-secret",
-      };
-      const user = await auth.registration.ensure(input);
-      await auth.registration.ensure({
-        ...input,
-        password: "must-not-replace-existing-password",
-      });
+      const input = { name: "Admin", email, password: "temporary-secret" };
+      const user = appsScriptFirst
+        ? await auth.registration.appsScript(input)
+        : await auth.registration.email(input);
+      if (emailPassword && appsScript) {
+        await auth.account.add(
+          user.id,
+          appsScriptFirst
+            ? {
+                provider: "emailPassword",
+                email,
+                password: input.password,
+              }
+            : { provider: "appsScript", email },
+        );
+      }
+      const stored = await repository.user.find(user.id);
       expect(db.table("user").find()).toHaveLength(1);
       expect(db.table("account").find()).toHaveLength(
         emailPassword && appsScript ? 2 : 1,
@@ -75,11 +83,28 @@ describe("Auth provisioning with the installed SheetORM version", () => {
       expect(user.accounts.every((account) => account.userId === user.id)).toBe(
         true,
       );
+      expect(stored?.accounts).toHaveLength(
+        emailPassword && appsScript ? 2 : 1,
+      );
       expect(
-        (await repository.user.find(user.id))?.accounts.map(
-          (account) => account.id,
-        ),
-      ).toEqual(user.accounts.map((account) => account.id));
+        stored?.accounts.every((account) => account.userId === user.id),
+      ).toBe(true);
+      expect(getActiveUser).not.toHaveBeenCalled();
+      expect(getEffectiveUser).not.toHaveBeenCalled();
+      await expect(
+        appsScriptFirst
+          ? auth.registration.appsScript(input)
+          : auth.registration.email(input),
+      ).rejects.toThrow("Account already registered");
+      if (emailPassword && appsScript) {
+        await expect(
+          auth.account.add(user.id, {
+            provider: "emailPassword",
+            email,
+            password: "replacement",
+          }),
+        ).rejects.toThrow("already has an account");
+      }
       if (appsScript)
         expect((await auth.signIn.appsScript({})).session.userId).toBe(user.id);
       if (!emailPassword) return;

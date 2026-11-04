@@ -119,14 +119,6 @@ export class SheetOrmUserRepository<
   }
 
   public async create(user: User): Promise<User> {
-    return this.persist(user, false);
-  }
-
-  public async save(user: User): Promise<User> {
-    return this.persist(user, true);
-  }
-
-  private async persist(user: User, upsert: boolean): Promise<User> {
     const userFields = this.schema.user.fields;
     const accountFields = this.schema.account.fields;
 
@@ -153,14 +145,35 @@ export class SheetOrmUserRepository<
     );
 
     this.db.transaction(() => {
+      // Recheck identity uniqueness under the same transaction as the insert.
+      const existing = this.db.table(this.schema.account.modelName).find();
+      const ids = new Set<string>();
+      const providers = new Set<string>();
+      for (const account of user.accounts) {
+        if (account.userId !== user.id)
+          throw new Error("Account user does not match");
+        if (
+          ids.has(account.id) ||
+          providers.has(account.identity.providerName) ||
+          existing.some(
+            (current) =>
+              current[accountFields.id] === account.id ||
+              (current[accountFields.provider] ===
+                account.identity.providerName &&
+                current[accountFields.providerAccountId] ===
+                  account.identity.accountId),
+          )
+        )
+          throw new Error("Account already registered");
+        ids.add(account.id);
+        providers.add(account.identity.providerName);
+      }
       const users = this.db.table(this.schema.user.modelName);
-      if (upsert) users.upsert([userRecord]);
-      else users.create([userRecord]);
+      users.create([userRecord]);
 
       if (accountRecords.length > 0) {
         const accounts = this.db.table(this.schema.account.modelName);
-        if (upsert) accounts.upsert(accountRecords);
-        else accounts.create(accountRecords);
+        accounts.create(accountRecords);
       }
     });
 

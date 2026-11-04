@@ -37,3 +37,5 @@ export type {
   AfterSignInHook,
   AuthHooks,
 } from "./hooks/AuthHooks";
+
+export type { AddAccountInput } from "./api/AppsScriptAuthAccount";

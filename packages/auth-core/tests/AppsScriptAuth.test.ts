@@ -254,6 +254,7 @@ describe("AppsScriptAuth", () => {
     });
 
     const user = await auth.registration.appsScript({
+      email: "user@example.com",
       name: "Staff",
     });
 
