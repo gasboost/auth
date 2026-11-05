@@ -155,7 +155,7 @@ const auth = new AppsScriptAuth({
 
   session: {
     storageType: "cache",
-    expiresIn: 60 * 20,
+    expiresIn: 60 * 20 * 1000,
   },
 
   emailPassword: {
@@ -177,12 +177,14 @@ const auth = new AppsScriptAuth({
 
 ## Session Storage
 
+`session.expiresIn` の単位はミリ秒（ms）で、省略時は20分（1,200,000ms）です。CacheService に保存する際は、TTLを秒に変換します。
+
 ### CacheService
 
 ```ts
 session: {
   storageType: "cache",
-  expiresIn: 60 * 20,
+  expiresIn: 60 * 20 * 1000,
 }
 ```
 
@@ -195,7 +197,7 @@ CacheService の TTL を利用して Session を保持します。
 ```ts
 session: {
   storageType: "properties",
-  expiresIn: 60 * 20,
+  expiresIn: 60 * 20 * 1000,
 }
 ```
 
