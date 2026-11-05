@@ -156,6 +156,67 @@ describe("AppsScriptAuth", () => {
     ).not.toThrow();
   });
 
+  it.each([
+    { name: "default", expiresIn: undefined, expectedMs: 20 * 60 * 1000 },
+    { name: "explicit", expiresIn: 90_000, expectedMs: 90_000 },
+  ])("$name Session TTLをミリ秒で扱い、cache TTLは秒に変換する", async ({
+    expiresIn,
+    expectedMs,
+  }) => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-06T00:00:00.000Z"));
+
+      const repository = createRepository();
+      const runtime = createRuntime();
+      const cache = runtime.cacheService.getScriptCache();
+      vi.spyOn(runtime.cacheService, "getScriptCache").mockReturnValue(cache);
+      const put = vi.spyOn(cache, "put");
+
+      const auth = new AppsScriptAuth({
+        repository,
+        runtime,
+        session: { storageType: "cache", expiresIn },
+        appsScript: { enabled: true, isSignupEnabled: true },
+      });
+
+      const signedUp = await auth.signUp.appsScript({ name: "Staff" });
+      expect(
+        signedUp.session.expiresAt.getTime() -
+          signedUp.session.createdAt.getTime(),
+      ).toBe(expectedMs);
+      expect(put).toHaveBeenLastCalledWith(
+        signedUp.session.id,
+        expect.any(String),
+        expectedMs / 1000,
+      );
+      expect(await auth.session.get(signedUp.session.id)).toEqual(
+        signedUp.session,
+      );
+
+      vi.mocked(repository.account.findByIdentity).mockResolvedValue(
+        signedUp.user.accounts[0],
+      );
+      vi.mocked(repository.user.find).mockResolvedValue(signedUp.user);
+
+      const signedIn = await auth.signIn.appsScript({});
+      expect(
+        signedIn.session.expiresAt.getTime() -
+          signedIn.session.createdAt.getTime(),
+      ).toBe(expectedMs);
+      expect(put).toHaveBeenLastCalledWith(
+        signedIn.session.id,
+        expect.any(String),
+        expectedMs / 1000,
+      );
+      expect(await auth.session.get(signedIn.session.id)).toEqual(
+        signedIn.session,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("properties session storageで初期化できる", () => {
     expect(
       () =>

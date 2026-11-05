@@ -20,6 +20,7 @@ import { AppsScriptAuthRepository } from "./storage/AppsScriptAuthRepository";
 
 type SessionConfig = {
   storageType: SessionStorageType;
+  /** Session duration in milliseconds. Defaults to 20 minutes. */
   expiresIn?: number;
 };
 
@@ -79,7 +80,7 @@ export class AppsScriptAuth<
       propertiesService: runtime.propertiesService,
     });
 
-    const expiresIn = session.expiresIn ?? 60 * 20;
+    const expiresIn = session.expiresIn ?? 60 * 20 * 1000;
 
     const emailPasswordConfig = emailPassword
       ? new EmailPasswordAuthConfig(emailPassword)
