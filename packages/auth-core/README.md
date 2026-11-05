@@ -745,3 +745,17 @@ Account 追加には任意の Repository メソッド `account.create(account): 
 保存と同じ transaction 内で再検証してください。`@gasboost/auth-sheetorm >=0.4.1` が対応します。
 複数 API にまたがる初期化の排他制御、途中失敗時の保存済み User ID の復旧や
 再開処理は呼び出し元（Bootstrap 等）の責務です。
+
+### 呼び出し元が管理するIDと汎用User参照（0.10.0）
+
+サーバー内部の `registration.email()` / `.appsScript()` は任意の `id` を受け取れます。
+省略時は従来どおりUUIDを生成します。新規作成であり、既存Userの自動統合やupsertは行いません。
+自己登録のSignUp RPCはこのIDを受け入れず、Apps Script自己登録はActiveUserを使い続けます。
+
+`auth.user.find(id)` と `auth.account.findByIdentity(provider, email)` は管理用の参照APIです。
+`auth.user.create({ id?, name })` はAccountを持たないUserだけを作り、その後 `account.add()` で明示的に追加できます。
+これらは通常のRPCへ公開しません。呼び出し元で権限検証と排他制御を行ってください。
+
+外部チェックポイントより先に登録が保存された場合は、事前に永続化した固定IDでUserを再取得してください。
+欠けたAccountだけを追加し、Userが欠けた孤立Accountがある場合も、同じ固定IDへの帰属を検証してから
+User行を再作成します。別UserのAccountをメール一致だけで取り込まないでください。

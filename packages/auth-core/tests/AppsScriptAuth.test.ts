@@ -344,3 +344,22 @@ describe("AppsScriptAuth", () => {
     },
   );
 });
+
+it("self-signup never accepts a caller-selected User ID", async () => {
+  const repository = createRepository();
+  const auth = new AppsScriptAuth({
+    repository,
+    runtime: createRuntime(),
+    session: { storageType: "cache" },
+    emailPassword: { enabled: true, pepper: "pepper", iterations: 1 },
+  });
+  await auth.signUp.email(
+    Object.assign(
+      { name: "Visitor", email: "visitor@example.com", password: "secret" },
+      { id: "caller-selected" },
+    ),
+  );
+  expect(repository.user.create.mock.calls[0][0].id).not.toBe(
+    "caller-selected",
+  );
+});

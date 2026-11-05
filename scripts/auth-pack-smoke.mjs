@@ -61,7 +61,7 @@ const packages = [
     ],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
+      "@gasboost/auth": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0",
     },
   },
   {
@@ -69,7 +69,7 @@ const packages = [
     directory: join(rootDirectory, "packages", "auth-sheetorm"),
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
-      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
+      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0",
       "@gasboost/sheetorm": "^3.1.0 || ^4.0.0",
     },
   },
@@ -404,6 +404,13 @@ void serverAuth.signUp.appsScript({ name: "Visitor" });
 void serverAuth.signUp.appsScript({ name: "Visitor", email: "other@example.com", userId: "other" });
 const enabled: boolean = serverAuth.registration.methods.appsScript;
 void enabled;
+
+void serverAuth.registration.appsScript({ id: "stable-id", name: "Admin", email: "admin@example.com" });
+void serverAuth.user.find("stable-id");
+void serverAuth.user.create({ id: "recovery-id", name: "Admin" });
+void serverAuth.account.findByIdentity("appsScript", "admin@example.com");
+// @ts-expect-error Self-signup must not accept an administrator-selected ID.
+void serverAuth.signUp.email({ id: "forbidden", name: "Visitor", email: "visitor@example.com", password: "password" });
 
 const metadata = {
   [AUTH_METADATA_KEY]: { token: "session-id" } satisfies AuthMetadata,

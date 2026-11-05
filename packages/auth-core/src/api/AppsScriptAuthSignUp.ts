@@ -14,7 +14,10 @@ import type { AppsScriptSessionStorage } from "../storage/AppsScriptSessionStora
 import { SignUp } from "./SignUp";
 
 export class AppsScriptAuthSignUp<THookResult = undefined> {
-  public email: SignUp<EmailPasswordRegistrationInput, THookResult>["execute"];
+  public email: SignUp<
+    Omit<EmailPasswordRegistrationInput, "id">,
+    THookResult
+  >["execute"];
   public appsScript: SignUp<
     Pick<AppsScriptRegistrationInput, "name">,
     THookResult
@@ -58,7 +61,11 @@ export class AppsScriptAuthSignUp<THookResult = undefined> {
         utilities,
       });
 
-      return emailSignUp.execute(input);
+      return emailSignUp.execute({
+        name: input.name,
+        email: input.email,
+        password: input.password,
+      });
     };
 
     this.appsScript = async (input) => {

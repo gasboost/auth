@@ -8,6 +8,7 @@ import type { AppsScriptAuthRepository } from "../storage/AppsScriptAuthReposito
 import type { Registration } from "./Registration";
 
 export interface EmailPasswordRegistrationInput {
+  readonly id?: string;
   readonly name: string;
   readonly email: string;
   readonly password: string;
@@ -30,7 +31,8 @@ export class EmailPasswordRegistration implements Registration<EmailPasswordRegi
       throw new Error("Account already registered");
     }
 
-    const userId = this.utilities.getUuid();
+    const userId = input.id ?? this.utilities.getUuid();
+    if (!userId.trim()) throw new Error("User ID is required");
     const accountId = this.utilities.getUuid();
 
     const password = new Password(

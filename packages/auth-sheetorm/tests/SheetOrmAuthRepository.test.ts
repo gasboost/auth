@@ -360,3 +360,15 @@ describe("account.create", () => {
     ).toBe("other");
   });
 });
+
+it("rejects a duplicate caller-selected User ID in the transaction", async () => {
+  const { db, repository } = createRepository();
+  const user = createUser();
+  await repository.user.create(user);
+  await expect(
+    repository.user.create(
+      new User({ id: user.id, name: "Another", accounts: [] }),
+    ),
+  ).rejects.toThrow("User already registered");
+  expect(db.table("user").find()).toHaveLength(1);
+});

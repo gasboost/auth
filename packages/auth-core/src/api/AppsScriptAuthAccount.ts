@@ -22,6 +22,18 @@ export class AppsScriptAuthAccount {
     },
   ) {}
 
+  public async findByIdentity(
+    provider: "appsScript" | "emailPassword",
+    email: string,
+  ): Promise<Account | null> {
+    if (
+      (provider !== "appsScript" && provider !== "emailPassword") ||
+      !email?.trim()
+    )
+      throw new Error("Provider and email are required");
+    return this.config.repository.account.findByIdentity(provider, email);
+  }
+
   async add(userId: string, input: AddAccountInput): Promise<Account> {
     const { repository, utilities, emailPassword, appsScript } = this.config;
     if (!userId?.trim() || !input.email?.trim())

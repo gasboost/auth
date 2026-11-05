@@ -282,3 +282,22 @@ describe("AppsScriptAuthRegistration", () => {
     });
   });
 });
+
+it.each(["email", "appsScript"] as const)(
+  "registration.%s preserves an explicit User ID",
+  async (provider) => {
+    const repository = createRepository();
+    const registration = createRegistration({ repository });
+    const user = await registration[provider]({
+      id: "stable-user",
+      name: "Admin",
+      email: "admin@example.com",
+      password: "temporary",
+    });
+    expect(user.id).toBe("stable-user");
+    expect(
+      user.accounts.every((account) => account.userId === "stable-user"),
+    ).toBe(true);
+    expect(repository.user.create).toHaveBeenCalledWith(user);
+  },
+);

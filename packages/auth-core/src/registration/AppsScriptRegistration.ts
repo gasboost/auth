@@ -6,6 +6,7 @@ import type { AppsScriptAuthRepository } from "../storage/AppsScriptAuthReposito
 import type { Registration } from "./Registration";
 
 export interface AppsScriptRegistrationInput {
+  readonly id?: string;
   readonly name: string;
   readonly email: string;
 }
@@ -33,7 +34,8 @@ export class AppsScriptRegistration implements Registration<AppsScriptRegistrati
       googleAccountAddress: email,
     });
 
-    const userId = this.utilities.getUuid();
+    const userId = input.id ?? this.utilities.getUuid();
+    if (!userId.trim()) throw new Error("User ID is required");
 
     // Account作成
     const account = new Account({

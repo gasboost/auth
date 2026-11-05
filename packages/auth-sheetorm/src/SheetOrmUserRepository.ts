@@ -169,6 +169,8 @@ export class SheetOrmUserRepository<
         providers.add(account.identity.providerName);
       }
       const users = this.db.table(this.schema.user.modelName);
+      if (users.find().some((record) => record[userFields.id] === user.id))
+        throw new Error("User already registered");
       users.create([userRecord]);
 
       if (accountRecords.length > 0) {
