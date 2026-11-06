@@ -27,7 +27,7 @@ function createDisabledAuth(): AppsScriptAuth<undefined> {
     },
 
     session: {
-      get: vi.fn(),
+      getWithUser: vi.fn(),
     },
 
     signOut: {
@@ -58,7 +58,7 @@ function createEnabledAuth(): {
     },
 
     session: {
-      get: vi.fn(),
+      getWithUser: vi.fn(),
     },
 
     signOut: {
@@ -98,7 +98,7 @@ describe("handlers", () => {
   it("getSessionをobject inputへ変換する", async () => {
     const auth = createDisabledAuth();
 
-    const get = vi.spyOn(auth.session, "get").mockResolvedValue(null);
+    const get = vi.spyOn(auth.session, "getWithUser").mockResolvedValue(null);
 
     const authHandlers = handlers(auth);
 

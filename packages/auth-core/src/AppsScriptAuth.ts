@@ -1,3 +1,4 @@
+import type { UserDataProvider } from "./api/UserData";
 import { AppsScriptAuthAccount } from "./api/AppsScriptAuthAccount";
 import { AppsScriptAuthPassword } from "./api/AppsScriptAuthPassword";
 import { AppsScriptAuthRegistration } from "./api/AppsScriptAuthRegistration";
@@ -34,6 +35,7 @@ type AppsScriptRuntime = {
 type AppsScriptAuthConfig<
   TEmailPassword extends EmailPasswordAuthOptions | undefined = undefined,
   THookResult = undefined,
+  TData = never,
 > = {
   repository: AppsScriptAuthRepository;
   session: SessionConfig;
@@ -41,6 +43,7 @@ type AppsScriptAuthConfig<
   emailPassword?: TEmailPassword;
   appsScript?: AppsScriptAuthenticationOptions;
   hooks?: AuthHooks<THookResult>;
+  user?: { data: UserDataProvider<TData> };
 };
 
 type AppsScriptAuthPasswordApi<TEmailPassword> = TEmailPassword extends {
@@ -52,12 +55,13 @@ type AppsScriptAuthPasswordApi<TEmailPassword> = TEmailPassword extends {
 export class AppsScriptAuth<
   TEmailPassword extends EmailPasswordAuthOptions | undefined = undefined,
   THookResult = undefined,
+  TData = never,
 > {
-  public readonly signIn: AppsScriptAuthSignIn<THookResult>;
+  public readonly signIn: AppsScriptAuthSignIn<THookResult, TData>;
 
-  public readonly signUp: AppsScriptAuthSignUp<THookResult>;
+  public readonly signUp: AppsScriptAuthSignUp<THookResult, TData>;
 
-  public readonly session: AppsScriptAuthSession;
+  public readonly session: AppsScriptAuthSession<TData>;
 
   public readonly signOut: AppsScriptAuthSignOut;
 
@@ -74,7 +78,8 @@ export class AppsScriptAuth<
     emailPassword,
     appsScript,
     hooks,
-  }: AppsScriptAuthConfig<TEmailPassword, THookResult>) {
+    user,
+  }: AppsScriptAuthConfig<TEmailPassword, THookResult, TData>) {
     const sessionStorage = sessionStorageFactory(session.storageType, {
       cacheService: runtime.cacheService,
       propertiesService: runtime.propertiesService,
@@ -90,8 +95,9 @@ export class AppsScriptAuth<
       ? new AppsScriptAuthenticationConfig(appsScript)
       : undefined;
 
-    this.signIn = new AppsScriptAuthSignIn<THookResult>({
+    this.signIn = new AppsScriptAuthSignIn<THookResult, TData>({
       sessionStorage,
+      userData: user?.data,
       repository,
       emailPassword: emailPasswordConfig,
       appsScript: appsScriptConfig,
@@ -105,9 +111,10 @@ export class AppsScriptAuth<
         : {}),
     });
 
-    this.signUp = new AppsScriptAuthSignUp<THookResult>({
+    this.signUp = new AppsScriptAuthSignUp<THookResult, TData>({
       afterSignIn: hooks?.afterSignIn,
       sessionStorage,
+      userData: user?.data,
       expiresIn,
       repository,
       emailPassword: emailPasswordConfig,
@@ -116,8 +123,10 @@ export class AppsScriptAuth<
       session: runtime.session,
     });
 
-    this.session = new AppsScriptAuthSession({
+    this.session = new AppsScriptAuthSession<TData>({
+      repository,
       sessionStorage,
+      userData: user?.data,
     });
 
     this.signOut = new AppsScriptAuthSignOut(sessionStorage);

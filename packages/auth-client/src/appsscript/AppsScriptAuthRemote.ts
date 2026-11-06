@@ -20,7 +20,9 @@ export interface AppsScriptAuthRpc {
     user: unknown;
     session: { id: string };
   }>;
-  getSession(input: { sessionId: string }): Promise<{ id: string } | null>;
+  getSession(input: {
+    sessionId: string;
+  }): Promise<{ id: string; user?: unknown } | null>;
   signOut(input: { sessionId: string }): Promise<unknown>;
 }
 
@@ -43,6 +45,13 @@ function withToken<TResult extends { user: unknown; session: { id: string } }>(
 ) {
   return { ...result, token: result.session.id };
 }
+
+type RestoredUser<TClient extends AppsScriptAuthRpc> =
+  NonNullable<Awaited<ReturnType<TClient["getSession"]>>> extends {
+    user: infer TUser;
+  }
+    ? TUser
+    : null;
 
 export function appsScriptAuthRemote<TClient extends AppsScriptAuthRpc>({
   client,
@@ -85,10 +94,15 @@ export function appsScriptAuthRemote<TClient extends AppsScriptAuthRpc>({
       const session = (await client.getSession({
         sessionId: token,
       })) as Awaited<ReturnType<TClient["getSession"]>>;
-      // The standard getSession RPC returns no user. Do not fabricate one.
       return session === null
         ? null
-        : { token: session.id, user: null, session };
+        : {
+            token: session.id,
+            user: ("user" in session
+              ? session.user
+              : null) as RestoredUser<TClient>,
+            session,
+          };
     },
   };
 }

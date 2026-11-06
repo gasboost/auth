@@ -344,3 +344,29 @@ frontend provider と backend の `@gasboost/auth-app` はこの共通 contract 
 この entry point は auth lifecycle / browser storage / RPC client に依存しません。
 `@gasboost/auth` core には frontend / RPC metadata の概念を追加しません。
 React / Vue / Svelte adapter はこの package の lifecycle と購読 API に接続します。
+
+## 復元後も拡張ユーザーを利用する（0.6.0）
+
+`@gasboost/auth >=0.10.0` と `@gasboost/auth-app >=0.7.0` の
+`handlers(auth)` を利用すると、RPC の `getSession` が返す User を
+`appsScriptAuthRemote` / `appsScriptAuth` が保持します。
+SignIn / SignUp / `restoreSession()` / `getState()` に同じ `user.data` 型が伝播します。
+
+```tsx
+const auth = appsScriptAuth({ client, storage });
+export const { AuthProvider, useAuth } = createAuthContext(auth);
+
+function StaffAction() {
+  const { user } = useAuth();
+  const allowed = user
+    ? policy.can(user.data.permissions, { staff: ["create"] })
+    : false;
+  return <button disabled={!allowed}>従業員を追加</button>;
+}
+```
+
+型は backend の `user.data` コールバックから推論されます。
+既存の `hooks.afterSignIn` と外部認証同期は引き続き利用できます。
+古い backend が User を返さない場合は従来どおり復元結果の `user` が `null` です。
+復元時のデータ取得エラーは reject し、保存済み token を保持します。
+画面上の判定に加え、実際の RPC ではバックエンド側で認可を検証してください。

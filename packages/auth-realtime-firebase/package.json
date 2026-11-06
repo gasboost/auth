@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-realtime-firebase",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Firebase Authentication integration adapter for @gasboost/auth.",
   "keywords": [
     "google-apps-script",
@@ -63,6 +63,6 @@
   },
   "peerDependencies": {
     "@gasboost/app": "^5.2.0",
-    "@gasboost/auth-app": "^0.6.0"
+    "@gasboost/auth-app": "^0.6.0 || ^0.7.0"
   }
 }

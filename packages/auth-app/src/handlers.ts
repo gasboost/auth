@@ -17,26 +17,41 @@ type PasswordApi = NonNullable<
 type Auth<
   TEmailPassword extends EmailPasswordOptions,
   THookResult,
-> = AppsScriptAuth<TEmailPassword, THookResult>;
+  TData = never,
+> = AppsScriptAuth<TEmailPassword, THookResult, TData>;
 
-type BaseHandlers<TEmailPassword extends EmailPasswordOptions, THookResult> = {
-  signInEmail: Auth<TEmailPassword, THookResult>["signIn"]["email"];
+type BaseHandlers<
+  TEmailPassword extends EmailPasswordOptions,
+  THookResult,
+  TData,
+> = {
+  signInEmail: Auth<TEmailPassword, THookResult, TData>["signIn"]["email"];
 
-  signInAppsScript: Auth<TEmailPassword, THookResult>["signIn"]["appsScript"];
+  signInAppsScript: Auth<
+    TEmailPassword,
+    THookResult,
+    TData
+  >["signIn"]["appsScript"];
 
-  signUpEmail: Auth<TEmailPassword, THookResult>["signUp"]["email"];
+  signUpEmail: Auth<TEmailPassword, THookResult, TData>["signUp"]["email"];
 
-  signUpAppsScript: Auth<TEmailPassword, THookResult>["signUp"]["appsScript"];
+  signUpAppsScript: Auth<
+    TEmailPassword,
+    THookResult,
+    TData
+  >["signUp"]["appsScript"];
 
   getSession: (input: {
     sessionId: Parameters<
-      Auth<TEmailPassword, THookResult>["session"]["get"]
+      Auth<TEmailPassword, THookResult, TData>["session"]["getWithUser"]
     >[0];
-  }) => ReturnType<Auth<TEmailPassword, THookResult>["session"]["get"]>;
+  }) => ReturnType<
+    Auth<TEmailPassword, THookResult, TData>["session"]["getWithUser"]
+  >;
 
   signOut: (input: {
     sessionId: Parameters<
-      Auth<TEmailPassword, THookResult>["signOut"]["execute"]
+      Auth<TEmailPassword, THookResult, TData>["signOut"]["execute"]
     >[0];
   }) => Promise<null>;
 };
@@ -51,7 +66,8 @@ type PasswordHandlers = {
 export type AuthHandlers<
   TEmailPassword extends EmailPasswordOptions,
   THookResult,
-> = BaseHandlers<TEmailPassword, THookResult> &
+  TData = never,
+> = BaseHandlers<TEmailPassword, THookResult, TData> &
   (TEmailPassword extends {
     passwordReset: unknown;
   }
@@ -61,16 +77,17 @@ export type AuthHandlers<
 export function handlers<
   TEmailPassword extends EmailPasswordOptions,
   THookResult,
+  TData = never,
 >(
-  auth: AppsScriptAuth<TEmailPassword, THookResult>,
-): AuthHandlers<TEmailPassword, THookResult> {
-  const baseHandlers: BaseHandlers<TEmailPassword, THookResult> = {
+  auth: AppsScriptAuth<TEmailPassword, THookResult, TData>,
+): AuthHandlers<TEmailPassword, THookResult, TData> {
+  const baseHandlers: BaseHandlers<TEmailPassword, THookResult, TData> = {
     signInEmail: auth.signIn.email,
     signInAppsScript: auth.signIn.appsScript,
     signUpEmail: auth.signUp.email,
     signUpAppsScript: auth.signUp.appsScript,
 
-    getSession: ({ sessionId }) => auth.session.get(sessionId),
+    getSession: ({ sessionId }) => auth.session.getWithUser(sessionId),
 
     signOut: async ({ sessionId }) => {
       await auth.signOut.execute(sessionId);
@@ -81,7 +98,7 @@ export function handlers<
   const password = auth.password as PasswordApi | undefined;
 
   if (password === undefined) {
-    return baseHandlers as AuthHandlers<TEmailPassword, THookResult>;
+    return baseHandlers as AuthHandlers<TEmailPassword, THookResult, TData>;
   }
 
   return {
@@ -94,5 +111,5 @@ export function handlers<
       await password.reset(input);
       return null;
     },
-  } as AuthHandlers<TEmailPassword, THookResult>;
+  } as AuthHandlers<TEmailPassword, THookResult, TData>;
 }
