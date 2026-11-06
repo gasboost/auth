@@ -39,3 +39,5 @@ export type {
 } from "./hooks/AuthHooks";
 
 export type { AddAccountInput } from "./api/AppsScriptAuthAccount";
+
+export type { AuthenticatedUser, UserDataProvider } from "./api/UserData";

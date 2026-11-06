@@ -61,7 +61,7 @@ const packages = [
     ],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
+      "@gasboost/auth": "^0.10.0",
     },
   },
   {
@@ -69,7 +69,8 @@ const packages = [
     directory: join(rootDirectory, "packages", "auth-sheetorm"),
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
-      "@gasboost/auth": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
+      "@gasboost/auth":
+        "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0",
       "@gasboost/sheetorm": "^3.1.0 || ^4.0.0",
     },
   },
@@ -79,7 +80,7 @@ const packages = [
     exports: ["FirebaseAuthHook", "firebaseAuthHandlers"],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth-app": "^0.6.0",
+      "@gasboost/auth-app": "^0.6.0 || ^0.7.0",
     },
   },
 ];
@@ -365,6 +366,7 @@ const firebaseHook = new FirebaseAuthHook({
 });
 
 const serverAuth = new AppsScriptAuth({
+  user: { data: async ({ user }) => ({ permissions: ["staff:read"], employeeId: user.id }) },
   hooks: { afterSignIn: firebaseHook.afterSignIn },
   appsScript: {
     enabled: true,
@@ -467,6 +469,11 @@ async function hookResults() {
   const tokens: string[] = [signedIn.hooks.customToken, signedUp.hooks.customToken, appsScript.hooks.customToken];
   const { session, synchronized } = await auth.sync();
   const id: string | undefined = session?.session.userId;
+  const permissions: string[] | undefined = session?.user.data.permissions;
+  const signedInPermissions: string[] = signedIn.user.data.permissions;
+  // @ts-expect-error packed user data retains its inferred permissions type
+  const invalidPermissions: number[] = signedIn.user.data.permissions;
+  void [permissions, signedInPermissions, invalidPermissions];
   const matched: boolean = await auth.isSynced();
   // @ts-expect-error Consumer RPC accepts no client-supplied user ID
   void client.issueFirebaseCustomToken({ userId: "attacker" });

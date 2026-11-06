@@ -55,7 +55,13 @@ function setup() {
         hooks: { customToken: "custom" },
       })),
     },
-    session: { get: vi.fn(async (id: string) => sessions.get(id) ?? null) },
+    session: {
+      get: vi.fn(async (id: string) => sessions.get(id) ?? null),
+      getWithUser: vi.fn(async (id: string) => {
+        const session = sessions.get(id);
+        return session ? { ...session, user } : null;
+      }),
+    },
     signOut: {
       execute: vi.fn(async (id: string) => {
         sessions.delete(id);
@@ -180,11 +186,10 @@ describe("appsScriptAuth with real RPC client, handlers, and middleware", () => 
     const restored = appsScriptAuth({ client, storage });
     expect(restored.getSession()).toBeNull();
     const session = await restored.restoreSession();
-    expect(server.session.get).toHaveBeenCalledWith(result.token);
+    expect(server.session.getWithUser).toHaveBeenCalledWith(result.token);
     expect(session?.token).toBe(result.token);
     expect(session?.session.id).toBe(result.token);
-    // getSession returns a session, never the User returned by signIn/signUp.
-    expect(restored.getUser()).toBeNull();
+    expect(restored.getUser()).toEqual(result.user);
     expect(restored.getState().isAuthenticated).toBe(true);
     expect(
       (await client.createEmployee({ name: "Taro", email: "taro@example.com" }))
@@ -234,6 +239,23 @@ describe("appsScriptAuth with real RPC client, handlers, and middleware", () => 
     expect(auth.getUser()?.id).toBe("user-1");
   });
 
+  it("supports legacy RPCs whose sessions have no user", async () => {
+    const { client } = setup();
+    const remote = appsScriptAuthRemote({
+      client: {
+        ...client,
+        getSession: async (_input: { sessionId: string }) => ({ id: "legacy" }),
+      },
+    });
+    const restored = await remote.getSession("legacy");
+    expect(restored).toEqual({
+      token: "legacy",
+      user: null,
+      session: { id: "legacy" },
+    });
+    expectTypeOf(restored!.user).toEqualTypeOf<null>();
+  });
+
   it("exposes an AuthRemote adapter for custom lifecycle composition", async () => {
     const { client } = setup();
     const remote = appsScriptAuthRemote({ client });
@@ -243,7 +265,7 @@ describe("appsScriptAuth with real RPC client, handlers, and middleware", () => 
     });
     expect(await remote.getSession(session.token)).toMatchObject({
       token: session.token,
-      user: null,
+      user: session.user,
     });
     await remote.signOut(session.token);
     expect(await remote.getSession(session.token)).toBeNull();

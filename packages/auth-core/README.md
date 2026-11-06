@@ -747,3 +747,41 @@ Account 追加には任意の Repository メソッド `account.create(account): 
 保存と同じ transaction 内で再検証してください。`@gasboost/auth-sheetorm >=0.4.1` が対応します。
 複数 API にまたがる初期化の排他制御、途中失敗時の保存済み User ID の復旧や
 再開処理は呼び出し元（Bootstrap 等）の責務です。
+
+## 認証済みユーザーの拡張（0.10.0）
+
+`user.data` に同期・非同期の読み取り処理を指定すると、戻り値の型が推論されます。
+認可、従業員、組織、プロフィールなど consumer 固有のサービスを利用できます。
+
+```ts
+const auth = new AppsScriptAuth({
+  repository,
+  runtime,
+  session: { storageType: "properties" },
+  appsScript: { enabled: true, isSignupEnabled: true },
+  user: {
+    data: async ({ user }) => ({
+      permissions: await authorization.resolve(user.id),
+    }),
+  },
+});
+
+const result = await auth.signIn.appsScript({});
+result.user.data.permissions; // authorization.resolve の戻り値型
+const restored = await auth.session.getWithUser(result.session.id);
+restored?.user.data.permissions;
+```
+
+4種の SignIn / SignUp と `session.getWithUser(id)` は同じ拡張ユーザー型を返します。
+拡張処理は毎回実行し、User / Session の保存スキーマを変更しません。
+`user.data` 未指定なら User の型・ログイン応答は従来どおりです。
+`session.get(id)` は既存の `Session | null` のままで、拡張処理を実行しません。
+`getWithUser(id)` は Session の既存フィールドに `user` を加えた応答を返します。
+無効・期限切れのセッションや取得できない User は `null` になります。
+
+拡張取得エラーは呼び出し元へ伝播し、無効な認証を示す `null` と区別します。
+SignIn / SignUp はデータ取得後に Session を保存し、`hooks.afterSignIn` を実行します。
+取得失敗時に Session は発行しません。SignUp で作成済みの User は残るため、復旧後は SignIn してください。
+復元時の取得失敗では既存 Session は保持し、`afterSignIn` は実行しません。
+既存の hook 戻り値（Firebase customToken 等）は `result.hooks` に維持されます。
+実際の RPC の認可はバックエンドで毎回検証してください。

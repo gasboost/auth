@@ -433,3 +433,19 @@ application 独自の state を追加する場合も、対応する middleware �
 - `Session.getActiveUser()` による identity 解決
 
 これらはそれぞれ `@gasboost/auth` または application の責務です。
+
+## 拡張ユーザーの RPC（0.7.0）
+
+`AppsScriptAuth` の `user.data` を設定すると、`handlers(auth)` の4種の
+SignIn / SignUp と `getSession` に戻り値の型が自動伝播します。追加設定は不要です。
+
+```ts
+const app = new AppsScript().calls(handlers(auth));
+const restored = await handlers(auth).getSession({ sessionId });
+restored?.user.data.permissions; // consumer が user.data で定義した型
+```
+
+`getSession` は `auth.session.getWithUser(id)` を呼び、従来の
+`id`, `userId`, `createdAt`, `expiresAt` を維持したまま `user` を追加します。
+User の取得・拡張・エラー処理は auth 本体が担当します。
+`authentication(auth)` は引き続き `session.get` によるセッション検証を行います。

@@ -1,3 +1,4 @@
+import type { UserDataProvider } from "./UserData";
 import type { AppsScriptAuthenticationConfig } from "../authentication/AppsScriptAuthentication";
 import type { EmailPasswordAuthConfig } from "../authentication/EmailPasswordAuthentication";
 import type { AfterSignInHook } from "../hooks/AuthHooks";
@@ -13,17 +14,23 @@ import type { AppsScriptAuthRepository } from "../storage/AppsScriptAuthReposito
 import type { AppsScriptSessionStorage } from "../storage/AppsScriptSessionStorage";
 import { SignUp } from "./SignUp";
 
-export class AppsScriptAuthSignUp<THookResult = undefined> {
-  public email: SignUp<EmailPasswordRegistrationInput, THookResult>["execute"];
+export class AppsScriptAuthSignUp<THookResult = undefined, TData = never> {
+  public email: SignUp<
+    EmailPasswordRegistrationInput,
+    THookResult,
+    TData
+  >["execute"];
   public appsScript: SignUp<
     Pick<AppsScriptRegistrationInput, "name">,
-    THookResult
+    THookResult,
+    TData
   >["execute"];
 
   constructor({
     sessionStorage,
     expiresIn,
     afterSignIn,
+    userData,
     repository,
     emailPassword,
     appsScript,
@@ -33,6 +40,7 @@ export class AppsScriptAuthSignUp<THookResult = undefined> {
     sessionStorage: AppsScriptSessionStorage;
     expiresIn: number;
     afterSignIn?: AfterSignInHook<THookResult>;
+    userData?: UserDataProvider<TData>;
     repository: AppsScriptAuthRepository;
     emailPassword?: EmailPasswordAuthConfig;
     appsScript?: AppsScriptAuthenticationConfig;
@@ -48,6 +56,7 @@ export class AppsScriptAuthSignUp<THookResult = undefined> {
 
       const emailSignUp = new SignUp({
         sessionStorage,
+        userData,
         afterSignIn,
         expiresIn,
         registration: new EmailPasswordRegistration(
@@ -73,6 +82,7 @@ export class AppsScriptAuthSignUp<THookResult = undefined> {
 
       const appsScriptSignUp = new SignUp({
         sessionStorage,
+        userData,
         afterSignIn,
         expiresIn,
         registration: new AppsScriptRegistration(utilities, repository),

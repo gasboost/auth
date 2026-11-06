@@ -57,9 +57,18 @@ importers:
       '@gasboost/client':
         specifier: ^0.5.0
         version: 0.5.0
+      '@gasboost/react':
+        specifier: ^0.4.0
+        version: 0.4.0(react@19.3.1)
       '@types/google-apps-script':
         specifier: ^2.0.13
         version: 2.0.13
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      react:
+        specifier: ^19.3.1
+        version: 19.3.1
 
   packages/auth-core:
     dependencies:
@@ -186,6 +195,14 @@ packages:
   '@gasboost/app@5.2.0':
     resolution: {integrity: sha512-wkxWsuwei4OnX19KWe9EL9/K89ZR1kUI5cTrMwbDuvymTXNsYwoE5PRHmnab7zjvbk24si8bImTGPOXAVNy7BQ==}
 
+  '@gasboost/auth-client@0.2.0':
+    resolution: {integrity: sha512-0NVkO/j1i6rHRgETRZl1+IFjTrZAQOurB+7UUrLaXiaAo+c/O+RtXmy4TCYleDbgw0u9sl9U95gfR7Xi1DpJvg==}
+    peerDependencies:
+      '@gasboost/client': ^0.5.0
+    peerDependenciesMeta:
+      '@gasboost/client':
+        optional: true
+
   '@gasboost/client@0.5.0':
     resolution: {integrity: sha512-kPARvI0Qsg758uxe1UQcGZhFXRiwTnn3iZWyKMIFaNnkXnzjHHaze1AmD27ZUnVMHqwPs/qOqpEq0XK6dWKLng==}
 
@@ -203,6 +220,11 @@ packages:
 
   '@gasboost/query@1.2.0':
     resolution: {integrity: sha512-WaNAWmUmO0RBZ+nJXvONj5Mzp3O7VqjIcLlNch0O+67qQd5sXSZ0g4epTIp4iyjvDH5ah40BZO7JFCReH9zwPA==}
+
+  '@gasboost/react@0.4.0':
+    resolution: {integrity: sha512-XtVSoPZTrf9ApJfzHlJkUGGlccQyIhjoPlX+xxmgaYaigWXsbNEiDUqrY4KWjkNUva34CEPm93QPeWCG9r8EtQ==}
+    peerDependencies:
+      react: ^19
 
   '@gasboost/realtime-firebase@0.2.0':
     resolution: {integrity: sha512-B4GAykPM2H0AN3EzA9BYduzN2lSZ/pBBfuyzUyg98qQDfO8bNA3m9bwI/ALe9kCQ9xYO8rsHkM81mEQJp3Pvcw==}
@@ -385,6 +407,9 @@ packages:
 
   '@types/node@26.5.1':
     resolution: {integrity: sha512-CzNm2FezW4VR/LjG6yUdiEgLE/rAQ9Slj5gCu/C2VrdcW7I0ahNZ8DRbHT7zOZ6r3ONgd/bsQIeSaoDGrd1C6g==}
+
+  '@types/react@19.3.0':
+    resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
   '@typescript-eslint/eslint-plugin@8.70.0':
     resolution: {integrity: sha512-/v8HZt6RlyIZxB3ntehELOcUcfxKPVGWXnQdJuHRmzrqgF8nQypcC/oxGW+Ot4VGKDq81XugPKxx0n5PBtf9PA==}
@@ -618,6 +643,9 @@ packages:
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
+
+  csstype@3.2.3:
+    resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
   date-fns-tz@3.2.0:
     resolution: {integrity: sha512-sg8HqoTEulcbbbVXeg84u5UnlsQa8GS5QXMqjjYIhS4abEVVKIUwe0/l/UhrZdKaL/W5eWZNlbTeEIiOXTcsBQ==}
@@ -932,6 +960,10 @@ packages:
     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
     engines: {node: '>=20'}
 
+  react@19.3.1:
+    resolution: {integrity: sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==}
+    engines: {node: '>=0.10.0'}
+
   rolldown@1.2.8:
     resolution: {integrity: sha512-Z67nTmhZe7anqnM/EjI392w5i/ANUinjip7QYsOyN37oayduxt3ksdX0hf5OOamkAd53BiIHfbfSzfUmzKFQqQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1163,6 +1195,10 @@ snapshots:
 
   '@gasboost/app@5.2.0': {}
 
+  '@gasboost/auth-client@0.2.0(@gasboost/client@0.5.0)':
+    optionalDependencies:
+      '@gasboost/client': 0.5.0
+
   '@gasboost/client@0.5.0': {}
 
   '@gasboost/fake-core@0.1.2': {}
@@ -1190,6 +1226,12 @@ snapshots:
       '@gasboost/table': 0.2.0(zod@4.5.4)
     transitivePeerDependencies:
       - zod
+
+  '@gasboost/react@0.4.0(react@19.3.1)':
+    dependencies:
+      '@gasboost/auth-client': 0.2.0(@gasboost/client@0.5.0)
+      '@gasboost/client': 0.5.0
+      react: 19.3.1
 
   '@gasboost/realtime-firebase@0.2.0':
     dependencies:
@@ -1320,6 +1362,10 @@ snapshots:
   '@types/node@26.5.1':
     dependencies:
       undici-types: 8.9.0
+
+  '@types/react@19.3.0':
+    dependencies:
+      csstype: 3.2.3
 
   '@typescript-eslint/eslint-plugin@8.70.0(@typescript-eslint/parser@8.70.0(@typescript/typescript6@6.0.2)(eslint@10.10.0))(@typescript/typescript6@6.0.2)(eslint@10.10.0)':
     dependencies:
@@ -1523,6 +1569,8 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
+
+  csstype@3.2.3: {}
 
   date-fns-tz@3.2.0(date-fns@4.4.0):
     dependencies:
@@ -1792,6 +1840,8 @@ snapshots:
   qified@0.10.1:
     dependencies:
       hookified: 2.2.0
+
+  react@19.3.1: {}
 
   rolldown@1.2.8:
     dependencies:
