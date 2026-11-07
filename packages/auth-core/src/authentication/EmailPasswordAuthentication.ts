@@ -1,3 +1,4 @@
+import { AuthError, AUTH_ERROR_CODES } from "../errors";
 import type { PasswordResetDelivery } from "../api/AppsScriptAuthPassword";
 import { authPattern } from "../AuthPattern";
 import { Password } from "../domain/Password";
@@ -103,7 +104,10 @@ export class EmailPasswordAuthentication implements Authentication<EmailPassword
     );
 
     if (!account) {
-      throw new Error("Account not found");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.INVALID_CREDENTIALS,
+        message: "Invalid credentials",
+      });
     }
 
     if (!(account.identity instanceof EmailPasswordIdentity)) {
@@ -118,7 +122,10 @@ export class EmailPasswordAuthentication implements Authentication<EmailPassword
     );
 
     if (!(await account.identity.verify(password, account.id))) {
-      throw new Error("Invalid password");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.INVALID_CREDENTIALS,
+        message: "Invalid credentials",
+      });
     }
 
     const user = await this.repository.user.find(account.userId);

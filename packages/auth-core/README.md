@@ -785,3 +785,36 @@ SignIn / SignUp はデータ取得後に Session を保存し、`hooks.afterSign
 復元時の取得失敗では既存 Session は保持し、`afterSignIn` は実行しません。
 既存の hook 戻り値（Firebase customToken 等）は `result.hooks` に維持されます。
 実際の RPC の認可はバックエンドで毎回検証してください。
+
+## Auth errors
+
+ブラウザとサーバーで共通のコードを使う場合は、GAS・Node API・認証実装に
+依存しない `@gasboost/auth/errors` を import してください。
+フロントエンドで `@gasboost/auth` のルートを import する必要はありません。
+
+```ts
+import {
+  AuthError,
+  AUTH_ERROR_CODES,
+  type AuthErrorCode,
+} from "@gasboost/auth/errors";
+
+const code: AuthErrorCode = AUTH_ERROR_CODES.FORBIDDEN;
+throw new AuthError({ code, message: "Forbidden" });
+```
+
+`AuthError` の `message` には、クライアントに公開してよい内容だけを渡します。
+
+| Code                     | 既知の失敗                                                                    | Message                        |
+| ------------------------ | ----------------------------------------------------------------------------- | ------------------------------ |
+| `INVALID_CREDENTIALS`    | メールの未登録、パスワード不一致、Apps Script の active user / アカウントなし | `Invalid credentials`          |
+| `UNAUTHORIZED`           | auth-app の metadata 不正、session なし・期限切れ                             | `Unauthorized`                 |
+| `FORBIDDEN`              | auth-app の権限不足                                                           | `Forbidden`                    |
+| `INVALID_PASSWORD_RESET` | パスワードリセットトークンの不正・期限切れ・使用済み                          | `Invalid password reset token` |
+| `REGISTRATION_FAILED`    | 登録の重複                                                                    | `Registration failed`          |
+
+認証失敗のコード・メッセージではアカウントの存在有無を区別しません。
+設定不備、identity の不整合、参照先 user の欠落、storage 障害などは通常の
+例外のままです。管理用の account API も内部エラーを公開用コードに変換しません。
+RPC での共通変換は [auth-app の authErrorHandler](../auth-app/README.md#共通の認証エラー処理)
+を利用できます。

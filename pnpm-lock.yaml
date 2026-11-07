@@ -37,11 +37,14 @@ importers:
         version: link:../auth-client
     devDependencies:
       '@gasboost/app':
-        specifier: ^5.2.0
-        version: 5.2.0
+        specifier: ^5.5.0
+        version: 5.5.0
       '@gasboost/auth':
         specifier: workspace:*
         version: link:../auth-core
+      '@gasboost/client':
+        specifier: ^0.6.0
+        version: 0.6.0
       '@types/google-apps-script':
         specifier: ^2.0.13
         version: 2.0.13
@@ -49,14 +52,14 @@ importers:
   packages/auth-client:
     devDependencies:
       '@gasboost/app':
-        specifier: ^5.2.0
-        version: 5.2.0
+        specifier: ^5.5.0
+        version: 5.5.0
       '@gasboost/auth':
         specifier: workspace:*
         version: link:../auth-core
       '@gasboost/client':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.6.0
+        version: 0.6.0
       '@gasboost/react':
         specifier: ^0.4.0
         version: 0.4.0(react@19.3.1)
@@ -99,8 +102,8 @@ importers:
         version: 0.2.0
     devDependencies:
       '@gasboost/app':
-        specifier: ^5.2.0
-        version: 5.2.0
+        specifier: ^5.5.0
+        version: 5.5.0
       '@gasboost/auth-app':
         specifier: workspace:*
         version: link:../auth-app
@@ -108,8 +111,8 @@ importers:
         specifier: workspace:*
         version: link:../auth-client
       '@gasboost/client':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.6.0
+        version: 0.6.0
       '@gasboost/fake-core':
         specifier: ^0.1.2
         version: 0.1.2
@@ -192,8 +195,8 @@ packages:
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@gasboost/app@5.2.0':
-    resolution: {integrity: sha512-wkxWsuwei4OnX19KWe9EL9/K89ZR1kUI5cTrMwbDuvymTXNsYwoE5PRHmnab7zjvbk24si8bImTGPOXAVNy7BQ==}
+  '@gasboost/app@5.5.0':
+    resolution: {integrity: sha512-71+KZQn4PoIVgwiJ25WU/sVy8Tq/HcRc26nXggzqNZ1KRQd+nVRUWmMZB3Db2RQt2XQXCCw2rOaJEr9hBTXDug==}
 
   '@gasboost/auth-client@0.2.0':
     resolution: {integrity: sha512-0NVkO/j1i6rHRgETRZl1+IFjTrZAQOurB+7UUrLaXiaAo+c/O+RtXmy4TCYleDbgw0u9sl9U95gfR7Xi1DpJvg==}
@@ -205,6 +208,9 @@ packages:
 
   '@gasboost/client@0.5.0':
     resolution: {integrity: sha512-kPARvI0Qsg758uxe1UQcGZhFXRiwTnn3iZWyKMIFaNnkXnzjHHaze1AmD27ZUnVMHqwPs/qOqpEq0XK6dWKLng==}
+
+  '@gasboost/client@0.6.0':
+    resolution: {integrity: sha512-uIokBgyO+/pDWS3d1od+eJp3sRYA2QplqQ7+FzBavV3JeceDt3rAZRLY4XJdAuetaKKG+SjeOOVaA7Z/psfMbg==}
 
   '@gasboost/fake-core@0.1.2':
     resolution: {integrity: sha512-FYicRmQK21hyUV31S1Ed6/GFtReL8Vv96rc3tQhJk3vQ5G+Y31GfCnX78CxuhyS45Gg+tOnkGLzByvK5EP38aQ==}
@@ -1193,13 +1199,15 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@gasboost/app@5.2.0': {}
+  '@gasboost/app@5.5.0': {}
 
   '@gasboost/auth-client@0.2.0(@gasboost/client@0.5.0)':
     optionalDependencies:
       '@gasboost/client': 0.5.0
 
   '@gasboost/client@0.5.0': {}
+
+  '@gasboost/client@0.6.0': {}
 
   '@gasboost/fake-core@0.1.2': {}
 

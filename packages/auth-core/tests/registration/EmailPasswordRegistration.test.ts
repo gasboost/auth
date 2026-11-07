@@ -128,7 +128,7 @@ describe("EmailPasswordRegistration", () => {
         email: "user@example.com",
         password: "password",
       }),
-    ).rejects.toThrow("Account already registered");
+    ).rejects.toThrow("Registration failed");
 
     expect(repository.account.findByIdentity).toHaveBeenCalledWith(
       authPattern.emailPassword,

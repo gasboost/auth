@@ -1,3 +1,4 @@
+import { AuthError, AUTH_ERROR_CODES } from "@gasboost/auth/errors";
 import type { AppsScriptMiddleware } from "@gasboost/app";
 import type { AppsScriptAuth } from "@gasboost/auth";
 import {
@@ -23,13 +24,19 @@ export function authentication(auth: {
         : undefined;
 
     if (!isAuthMetadata(authMetadata)) {
-      throw new Error("Unauthorized");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.UNAUTHORIZED,
+        message: "Unauthorized",
+      });
     }
 
     const session = await auth.session.get(authMetadata.token);
 
     if (session === null) {
-      throw new Error("Unauthorized");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.UNAUTHORIZED,
+        message: "Unauthorized",
+      });
     }
 
     context.state.set("session", session);

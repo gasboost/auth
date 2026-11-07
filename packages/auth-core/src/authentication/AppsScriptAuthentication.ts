@@ -1,3 +1,4 @@
+import { AuthError, AUTH_ERROR_CODES } from "../errors";
 import { authPattern } from "../AuthPattern";
 import { User } from "../domain/User";
 import { AppsScriptIdentity } from "../identity/AppsScriptIdentity";
@@ -51,7 +52,10 @@ export class AppsScriptAuthentication implements Authentication<AppsScriptCreden
     const email = this.session.getActiveUser().getEmail();
 
     if (!email) {
-      throw new Error("No active user found");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.INVALID_CREDENTIALS,
+        message: "Invalid credentials",
+      });
     }
 
     const account = await this.repository.account.findByIdentity(
@@ -60,7 +64,10 @@ export class AppsScriptAuthentication implements Authentication<AppsScriptCreden
     );
 
     if (!account) {
-      throw new Error("Account not found");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.INVALID_CREDENTIALS,
+        message: "Invalid credentials",
+      });
     }
 
     if (!(account.identity instanceof AppsScriptIdentity)) {

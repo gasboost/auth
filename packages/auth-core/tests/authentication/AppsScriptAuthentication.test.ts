@@ -97,9 +97,10 @@ describe("AppsScriptAuthentication", () => {
       createSession("user@example.com"),
     );
 
-    await expect(authentication.verify({})).rejects.toThrow(
-      "Account not found",
-    );
+    await expect(authentication.verify({})).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      message: "Invalid credentials",
+    });
 
     expect(repository.account.findByIdentity).toHaveBeenCalledWith(
       authPattern.appsScript,
@@ -166,9 +167,10 @@ describe("AppsScriptAuthentication", () => {
       createSession(""),
     );
 
-    await expect(authentication.verify({})).rejects.toThrow(
-      "No active user found",
-    );
+    await expect(authentication.verify({})).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      message: "Invalid credentials",
+    });
 
     expect(repository.account.findByIdentity).not.toHaveBeenCalled();
   });

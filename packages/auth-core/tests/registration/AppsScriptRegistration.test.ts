@@ -80,7 +80,7 @@ describe("AppsScriptRegistration", () => {
         name: "Taro",
         email: "user@example.com",
       }),
-    ).rejects.toThrow("Account already registered");
+    ).rejects.toThrow("Registration failed");
 
     expect(repository.account.findByIdentity).toHaveBeenCalledWith(
       authPattern.appsScript,

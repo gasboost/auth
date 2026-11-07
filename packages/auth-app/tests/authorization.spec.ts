@@ -1,3 +1,4 @@
+import { authErrorHandler } from "../src/authErrorHandler";
 import { AUTH_METADATA_KEY } from "@gasboost/auth-client/metadata";
 
 import { AppsScript } from "@gasboost/app";
@@ -20,11 +21,14 @@ describe("authorization", () => {
     async (invocationType) => {
       const can = vi.fn();
       const output = {} as GoogleAppsScript.Content.TextOutput;
-      const app = new AppsScript().use(createAuthentication(null)).use(
-        authorization({ can }, {
-          project: ["read"],
-        } as const),
-      );
+      const app = new AppsScript()
+        .use(authErrorHandler())
+        .use(createAuthentication(null))
+        .use(
+          authorization({ can }, {
+            project: ["read"],
+          } as const),
+        );
 
       const response = await (invocationType === "get"
         ? app.get(() => output).callGet({} as never)
@@ -49,6 +53,7 @@ describe("authorization", () => {
     } as const;
 
     const app = new AppsScript()
+      .use(authErrorHandler())
       .use(createAuthentication(session))
       .use(
         authorization(
@@ -86,6 +91,7 @@ describe("authorization", () => {
     };
 
     const app = new AppsScript()
+      .use(authErrorHandler())
       .use(createAuthentication(session))
       .use(
         authorization(

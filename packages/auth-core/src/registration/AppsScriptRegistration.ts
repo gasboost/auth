@@ -1,3 +1,4 @@
+import { AuthError, AUTH_ERROR_CODES } from "../errors";
 import { authPattern } from "../AuthPattern";
 import { Account } from "../domain/Account";
 import { User } from "../domain/User";
@@ -25,7 +26,10 @@ export class AppsScriptRegistration implements Registration<AppsScriptRegistrati
     );
 
     if (existingAccount) {
-      throw new Error("Account already registered");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.REGISTRATION_FAILED,
+        message: "Registration failed",
+      });
     }
 
     // AppsScriptIdentity作成

@@ -174,22 +174,18 @@ describe("user.data across authentication and RPC restoration", () => {
     data.mockImplementation(() => {
       throw error;
     });
-    await expect(auth.signIn(credentials)).rejects.toThrow(
-      "User data unavailable",
-    );
+    await expect(auth.signIn(credentials)).rejects.toThrow("INTERNAL_ERROR");
     await expect(auth.signUpAppsScript({ name: "AppsScript" })).rejects.toThrow(
-      "User data unavailable",
+      "INTERNAL_ERROR",
     );
-    await expect(auth.signInAppsScript()).rejects.toThrow(
-      "User data unavailable",
-    );
+    await expect(auth.signInAppsScript()).rejects.toThrow("INTERNAL_ERROR");
     await expect(
       auth.signUp({
         name: "New",
         email: "new@example.com",
         password: "secret",
       }),
-    ).rejects.toThrow("User data unavailable");
+    ).rejects.toThrow("INTERNAL_ERROR");
     expect(afterSignIn).toHaveBeenCalledTimes(1);
     expect(propertiesService.getScriptProperties().getProperties()).toEqual({});
     // Registration persists even when response data cannot be built; retry with sign-in.
@@ -203,9 +199,7 @@ describe("user.data across authentication and RPC restoration", () => {
     const signedUp = await auth.signUp({ name: "Email", ...credentials });
     const calls = data.mock.calls.length;
     data.mockRejectedValue(new Error("User data unavailable"));
-    await expect(auth.restoreSession()).rejects.toThrow(
-      "User data unavailable",
-    );
+    await expect(auth.restoreSession()).rejects.toThrow("INTERNAL_ERROR");
     expect(storage.get()).toBe(signedUp.token);
     expect(await server.session.get(signedUp.token)).not.toBeNull();
     expect(await client.getSession({ sessionId: "invalid" })).toBeNull();

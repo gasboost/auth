@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-realtime-firebase",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Firebase Authentication integration adapter for @gasboost/auth.",
   "keywords": [
     "google-apps-script",
@@ -44,10 +44,10 @@
     "@gasboost/realtime-firebase": "^0.2.0"
   },
   "devDependencies": {
-    "@gasboost/app": "^5.2.0",
+    "@gasboost/app": "^5.5.0",
     "@gasboost/auth-app": "workspace:*",
     "@gasboost/auth-client": "workspace:*",
-    "@gasboost/client": "^0.5.0",
+    "@gasboost/client": "^0.6.0",
     "@gasboost/fake-core": "^0.1.2",
     "@gasboost/fake-node": "^0.1.2",
     "@types/google-apps-script": "^2.0.13",
@@ -63,6 +63,6 @@
   },
   "peerDependencies": {
     "@gasboost/app": "^5.2.0",
-    "@gasboost/auth-app": "^0.6.0 || ^0.7.0"
+    "@gasboost/auth-app": "^0.6.0 || ^0.7.0 || ^0.8.0"
   }
 }

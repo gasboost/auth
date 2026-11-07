@@ -95,7 +95,7 @@ describe("Registration and account linking with the installed SheetORM version",
         appsScriptFirst
           ? auth.registration.appsScript(input)
           : auth.registration.email(input),
-      ).rejects.toThrow("Account already registered");
+      ).rejects.toThrow("Registration failed");
       if (emailPassword && appsScript) {
         await expect(
           auth.account.add(user.id, {
