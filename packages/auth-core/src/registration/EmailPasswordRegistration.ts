@@ -1,3 +1,4 @@
+import { AuthError, AUTH_ERROR_CODES } from "../errors";
 import type { EmailPasswordAuthConfig } from "../authentication/EmailPasswordAuthentication";
 import { authPattern } from "../AuthPattern";
 import { Account } from "../domain/Account";
@@ -27,7 +28,10 @@ export class EmailPasswordRegistration implements Registration<EmailPasswordRegi
     );
 
     if (existingAccount) {
-      throw new Error("Account already registered");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.REGISTRATION_FAILED,
+        message: "Registration failed",
+      });
     }
 
     const userId = this.utilities.getUuid();

@@ -144,7 +144,7 @@ describe("AppsScriptAuthRegistration", () => {
       const registration = createRegistration({ repository });
 
       await expect(registration.email(input)).rejects.toThrow(
-        "Account already registered",
+        "Registration failed",
       );
 
       expect(repository.user.create).not.toHaveBeenCalled();
@@ -276,7 +276,7 @@ describe("AppsScriptAuthRegistration", () => {
 
       await expect(
         registration.appsScript({ name: "Staff", email: "staff@example.com" }),
-      ).rejects.toThrow("Account already registered");
+      ).rejects.toThrow("Registration failed");
 
       expect(repository.user.create).not.toHaveBeenCalled();
     });

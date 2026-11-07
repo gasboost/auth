@@ -29,6 +29,7 @@ const packages = [
     ],
     subpathExports: {
       "./authorization": ["AuthorizationPolicy"],
+      "./errors": ["AUTH_ERROR_CODES", "AuthError"],
     },
   },
   {
@@ -55,13 +56,14 @@ const packages = [
     directory: join(rootDirectory, "packages", "auth-app"),
     exports: [
       "authentication",
+      "authErrorHandler",
       "authorization",
       "authorizationHandlers",
       "handlers",
     ],
     peers: {
-      "@gasboost/app": "^5.2.0",
-      "@gasboost/auth": "^0.10.0",
+      "@gasboost/app": "^5.5.0",
+      "@gasboost/auth": "^0.11.0",
     },
   },
   {
@@ -70,7 +72,7 @@ const packages = [
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
       "@gasboost/auth":
-        "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0",
+        "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0",
       "@gasboost/sheetorm": "^3.1.0 || ^4.0.0",
     },
   },
@@ -80,7 +82,7 @@ const packages = [
     exports: ["FirebaseAuthHook", "firebaseAuthHandlers"],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth-app": "^0.6.0 || ^0.7.0",
+      "@gasboost/auth-app": "^0.6.0 || ^0.7.0 || ^0.8.0",
     },
   },
 ];
@@ -215,8 +217,8 @@ try {
         name: "auth-pack-smoke",
         private: true,
         dependencies: {
-          "@gasboost/app": "^5.2.0",
-          "@gasboost/client": "^0.5.0",
+          "@gasboost/app": "^5.5.0",
+          "@gasboost/client": "^0.6.0",
           "@gasboost/auth": `file:${tarballs.get("@gasboost/auth")}`,
           "@gasboost/auth-app": `file:${tarballs.get("@gasboost/auth-app")}`,
           "@gasboost/auth-client": `file:${tarballs.get("@gasboost/auth-client")}`,
@@ -320,6 +322,7 @@ import {
 
 import {
   authentication,
+  authErrorHandler,
   handlers,
 } from "@gasboost/auth-app";
 
@@ -414,6 +417,7 @@ isAuthMetadata(metadata[AUTH_METADATA_KEY]);
 // @ts-expect-error Firebase RPC requires authentication middleware
 new AppsScript().calls(firebaseAuthHandlers(firebaseHook));
 const app = new AppsScript()
+  .use(authErrorHandler())
   .calls(handlers(serverAuth))
   .use(authentication(serverAuth))
   .calls(firebaseAuthHandlers(firebaseHook))
@@ -503,11 +507,60 @@ authCore({ storage });
     cwd: consumerDirectory,
   });
 
+  writeFileSync(
+    join(consumerDirectory, "errors.cjs"),
+    `const Module = require("node:module");
+const originalLoad = Module._load;
+Module._load = function(request, ...args) {
+  if (request !== "@gasboost/auth/errors") throw new Error("Unexpected dependency: " + request);
+  return originalLoad.call(this, request, ...args);
+};
+const { AuthError, AUTH_ERROR_CODES } = require("@gasboost/auth/errors");
+const error = new AuthError({ code: AUTH_ERROR_CODES.INVALID_CREDENTIALS, message: "Invalid credentials" });
+if (!(error instanceof Error) || error.code !== "INVALID_CREDENTIALS") throw new Error("Invalid auth error");
+`,
+  );
+  writeFileSync(
+    join(consumerDirectory, "rpc-errors.cjs"),
+    `const assert = require("node:assert/strict");
+let app;
+let success;
+let failure;
+const runner = new Proxy({}, {
+  get(_target, name) {
+    if (name === "withSuccessHandler") return (callback) => { success = callback; return runner; };
+    if (name === "withFailureHandler") return (callback) => { failure = callback; return runner; };
+    return (...args) => app.dispatch(name, ...args).then(success, (error) => failure({ message: error.message }));
+  },
+});
+globalThis.google = { script: { run: runner } };
+const { AppsScript } = require("@gasboost/app");
+const { AuthError, AUTH_ERROR_CODES } = require("@gasboost/auth/errors");
+const { authErrorHandler } = require("@gasboost/auth-app");
+const { appsScriptClient, AppsScriptRpcError } = require("@gasboost/client");
+app = new AppsScript().use(authErrorHandler())
+  .call("known", () => { throw new AuthError({ code: AUTH_ERROR_CODES.INVALID_CREDENTIALS, message: "Invalid credentials" }); })
+  .call("unknown", () => { throw new Error("internal secret"); })
+  .call("success", () => ({ ok: true }));
+const { client } = appsScriptClient();
+async function main() {
+  await assert.rejects(client.known(), (error) => error instanceof AppsScriptRpcError && error.code === "INVALID_CREDENTIALS" && error.message === "Invalid credentials");
+  await assert.rejects(client.unknown(), (error) => error instanceof AppsScriptRpcError && error.code === "INTERNAL_ERROR" && error.message === "An unexpected error occurred");
+  assert.deepEqual(await client.success(), { ok: true });
+}
+main().catch((error) => { process.stderr.write(String(error)); process.exitCode = 1; });
+`,
+  );
+  run("node", [join(consumerDirectory, "rpc-errors.cjs")]);
+  run("node", [join(consumerDirectory, "errors.cjs")]);
   run("node", [join(consumerDirectory, "require.cjs")]);
 
   writeFileSync(
     join(consumerDirectory, "root-consumer.ts"),
-    `import { authCore, authClient, memoryAuthStorage, type AuthRemote, type AuthStorage } from "@gasboost/auth-client";
+    `import { AUTH_ERROR_CODES, AuthError, type AuthErrorCode } from "@gasboost/auth/errors";
+const code: AuthErrorCode = AUTH_ERROR_CODES.UNAUTHORIZED;
+new AuthError({ code, message: "Unauthorized" });
+import { authCore, authClient, memoryAuthStorage, type AuthRemote, type AuthStorage } from "@gasboost/auth-client";
 const storage: AuthStorage = memoryAuthStorage();
 const remote: AuthRemote<{ token: string; user: null }, {}, {}> = {
   signIn: async () => ({ token: "token", user: null }),

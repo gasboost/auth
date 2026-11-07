@@ -1,3 +1,4 @@
+import { authErrorHandler } from "../../auth-app/src/authErrorHandler";
 import { AppsScript, type InferAppsScript } from "@gasboost/app";
 import { AppsScriptAuth, User } from "@gasboost/auth";
 import {
@@ -74,6 +75,7 @@ function setup() {
   >;
   const issueCustomToken = vi.fn((userId: string) => `custom:${userId}`);
   const app = new AppsScript()
+    .use(authErrorHandler())
     .calls(handlers(auth))
     .use(authentication(auth))
     .call("issueFirebaseCustomToken", (_: Record<string, never>, context) => ({

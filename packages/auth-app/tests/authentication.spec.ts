@@ -1,3 +1,4 @@
+import { authErrorHandler } from "../src/authErrorHandler";
 import {
   AppsScript,
   type InferAppsScript,
@@ -34,6 +35,7 @@ describe("authentication", () => {
   it("metadataのtokenでsessionを検証し業務inputを変更せずstateへ設定する", async () => {
     const get = vi.fn().mockResolvedValue(session);
     const app = new AppsScript()
+      .use(authErrorHandler())
       .use(authentication(createAuth(get)))
       .call("updateProfile", (input: { name: string }, context) => {
         const currentSession: AuthSession = context.state.get("session");
@@ -58,6 +60,7 @@ describe("authentication", () => {
   it("有効なmetadataがあればinputなしRPCも認証できる", async () => {
     const get = vi.fn().mockResolvedValue(session);
     const app = new AppsScript()
+      .use(authErrorHandler())
       .use(authentication(createAuth(get)))
       .call(
         "getProfile",
@@ -78,6 +81,7 @@ describe("authentication", () => {
     const get = vi.fn().mockResolvedValue(session);
     const input = { token: "business-token" };
     const app = new AppsScript()
+      .use(authErrorHandler())
       .use(authentication(createAuth(get)))
       .call("getProfile", (value: typeof input) => value);
 
@@ -117,6 +121,7 @@ describe("authentication", () => {
       const get = vi.fn();
       const handler = vi.fn();
       const app = new AppsScript()
+        .use(authErrorHandler())
         .use(authentication(createAuth(get)))
         .call("privateRpc", handler);
 
@@ -133,6 +138,7 @@ describe("authentication", () => {
   it("metadataもinputもない保護対象RPCはUnauthorizedにする", async () => {
     const get = vi.fn();
     const app = new AppsScript()
+      .use(authErrorHandler())
       .use(authentication(createAuth(get)))
       .call("privateHealth", () => true);
     await expect(app.dispatch("privateHealth")).rejects.toThrow("Unauthorized");
@@ -143,6 +149,7 @@ describe("authentication", () => {
     const get = vi.fn().mockResolvedValue(null);
     const handler = vi.fn();
     const app = new AppsScript()
+      .use(authErrorHandler())
       .use(authentication(createAuth(get)))
       .call("getProfile", handler);
 
@@ -154,20 +161,22 @@ describe("authentication", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it("session serviceのエラーはそのまま伝搬する", async () => {
+  it("session serviceの内部エラーはRPC境界で正規化する", async () => {
     const error = new Error("Storage unavailable");
     const get = vi.fn().mockRejectedValue(error);
     const app = new AppsScript()
+      .use(authErrorHandler())
       .use(authentication(createAuth(get)))
       .call("getProfile", () => true);
     await expect(
       app.dispatch("getProfile", undefined, metadata("session-1")),
-    ).rejects.toBe(error);
+    ).rejects.toThrow("INTERNAL_ERROR");
   });
 
   it("middlewareより前に登録した公開RPCはmetadataなしで通過する", async () => {
     const get = vi.fn();
     const app = new AppsScript()
+      .use(authErrorHandler())
       .call("health", () => true)
       .call(
         "signIn",

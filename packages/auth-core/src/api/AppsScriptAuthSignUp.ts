@@ -1,3 +1,4 @@
+import { AuthError, AUTH_ERROR_CODES } from "../errors";
 import type { UserDataProvider } from "./UserData";
 import type { AppsScriptAuthenticationConfig } from "../authentication/AppsScriptAuthentication";
 import type { EmailPasswordAuthConfig } from "../authentication/EmailPasswordAuthentication";
@@ -78,7 +79,11 @@ export class AppsScriptAuthSignUp<THookResult = undefined, TData = never> {
       appsScript.ensureSignUpEnabled();
 
       const email = session.getActiveUser().getEmail();
-      if (!email) throw new Error("No active user found");
+      if (!email)
+        throw new AuthError({
+          code: AUTH_ERROR_CODES.INVALID_CREDENTIALS,
+          message: "Invalid credentials",
+        });
 
       const appsScriptSignUp = new SignUp({
         sessionStorage,

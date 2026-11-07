@@ -1,6 +1,6 @@
 {
   "name": "@gasboost/auth-app",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Authentication middleware adapter for @gasboost/auth and @gasboost/app.",
   "keywords": [
     "google-apps-script",
@@ -39,13 +39,14 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@gasboost/app": "^5.2.0",
-    "@gasboost/auth": "^0.10.0"
+    "@gasboost/app": "^5.5.0",
+    "@gasboost/auth": "^0.11.0"
   },
   "devDependencies": {
-    "@gasboost/app": "^5.2.0",
+    "@gasboost/app": "^5.5.0",
     "@gasboost/auth": "workspace:*",
-    "@types/google-apps-script": "^2.0.13"
+    "@types/google-apps-script": "^2.0.13",
+    "@gasboost/client": "^0.6.0"
   },
   "scripts": {
     "format": "prettier --check . --config ../../.prettierrc.json --ignore-path ../../.prettierignore",

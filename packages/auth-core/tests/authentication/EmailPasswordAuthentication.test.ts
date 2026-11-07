@@ -116,7 +116,10 @@ describe("EmailPasswordAuthentication", () => {
         email: "user@example.com",
         password: "password",
       }),
-    ).rejects.toThrow("Account not found");
+    ).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      message: "Invalid credentials",
+    });
 
     expect(repository.user.find).not.toHaveBeenCalled();
   });
@@ -185,7 +188,10 @@ describe("EmailPasswordAuthentication", () => {
         email: "user@example.com",
         password: "wrong-password",
       }),
-    ).rejects.toThrow("Invalid password");
+    ).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      message: "Invalid credentials",
+    });
 
     expect(repository.user.find).not.toHaveBeenCalled();
   });
@@ -226,7 +232,10 @@ describe("EmailPasswordAuthentication", () => {
         email: "user@example.com",
         password: "password",
       }),
-    ).rejects.toThrow("Invalid password");
+    ).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      message: "Invalid credentials",
+    });
 
     expect(repository.user.find).not.toHaveBeenCalled();
   });
@@ -352,7 +361,10 @@ describe("EmailPasswordAuthentication", () => {
         email: "user@example.com",
         password: "password",
       }),
-    ).rejects.toThrow("Invalid password");
+    ).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      message: "Invalid credentials",
+    });
 
     expect(repository.user.find).not.toHaveBeenCalled();
   });
@@ -393,7 +405,10 @@ describe("EmailPasswordAuthentication", () => {
         email: "user@example.com",
         password: "password",
       }),
-    ).rejects.toThrow("Invalid password");
+    ).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      message: "Invalid credentials",
+    });
 
     expect(repository.user.find).not.toHaveBeenCalled();
   });

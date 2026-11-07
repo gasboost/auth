@@ -286,7 +286,7 @@ describe("AppsScriptAuthSignUp", () => {
       }),
     });
     await expect(signUp.appsScript({ name: "Visitor" })).rejects.toThrow(
-      "No active user found",
+      "Invalid credentials",
     );
     expect(repository.account.findByIdentity).not.toHaveBeenCalled();
     expect(repository.user.create).not.toHaveBeenCalled();

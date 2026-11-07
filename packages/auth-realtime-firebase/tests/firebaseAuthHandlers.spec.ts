@@ -1,3 +1,4 @@
+import { authErrorHandler } from "@gasboost/auth-app";
 import { AppsScript, type InferAppsScript } from "@gasboost/app";
 import {
   AppsScriptAuth,
@@ -92,6 +93,7 @@ function setup(expiresIn = 1200) {
     hooks: { afterSignIn: hook.afterSignIn },
   });
   const app = new AppsScript()
+    .use(authErrorHandler())
     .calls(handlers(auth))
     .use(authentication(auth))
     .calls(firebaseAuthHandlers(hook));
@@ -210,7 +212,7 @@ describe("firebaseAuthHandlers", () => {
       throw new Error("Signing failed");
     });
     await expect(client.issueFirebaseCustomToken()).rejects.toThrow(
-      "Signing failed",
+      "INTERNAL_ERROR",
     );
     expect(storage.get()).toBe(signedUp.session.id);
   });

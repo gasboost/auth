@@ -370,3 +370,10 @@ function StaffAction() {
 古い backend が User を返さない場合は従来どおり復元結果の `user` が `null` です。
 復元時のデータ取得エラーは reject し、保存済み token を保持します。
 画面上の判定に加え、実際の RPC ではバックエンド側で認可を検証してください。
+
+## RPC error compatibility
+
+`@gasboost/client@^0.5.0 || ^0.6.0` に対応します。認証エラーのコード判定には
+`@gasboost/client@^0.6.0` と `@gasboost/auth/errors` を利用してください。
+コードの定義と RPC エラーの復元は auth-client では行いません。
+[auth-app の共通エラー処理](../auth-app/README.md#共通の認証エラー処理)を参照してください。

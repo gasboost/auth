@@ -1,3 +1,4 @@
+export { authErrorHandler } from "./authErrorHandler";
 export { authentication } from "./authentication";
 export { authorization } from "./authorization";
 export {

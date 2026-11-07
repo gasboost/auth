@@ -1,3 +1,4 @@
+import { AuthError, AUTH_ERROR_CODES } from "@gasboost/auth/errors";
 import type { AppsScriptMiddleware } from "@gasboost/app";
 import type {
   AppsScriptAuthorization,
@@ -27,7 +28,10 @@ export function authorization<const TStatement extends PermissionStatement>(
     const allowed = await service.can(session.userId, requirement);
 
     if (!allowed) {
-      throw new Error("Forbidden");
+      throw new AuthError({
+        code: AUTH_ERROR_CODES.FORBIDDEN,
+        message: "Forbidden",
+      });
     }
 
     return next();

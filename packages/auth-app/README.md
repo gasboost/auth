@@ -449,3 +449,48 @@ restored?.user.data.permissions; // consumer が user.data で定義した型
 `id`, `userId`, `createdAt`, `expiresAt` を維持したまま `user` を追加します。
 User の取得・拡張・エラー処理は auth 本体が担当します。
 `authentication(auth)` は引き続き `session.get` によるセッション検証を行います。
+
+## 共通の認証エラー処理
+
+`authErrorHandler()` は **対象 RPC を `.calls()` / `.call()` で登録する前に
+`.use()` で登録**してください。`@gasboost/app@^5.5.0` が必要です。
+
+```ts
+import { AppsScript } from "@gasboost/app";
+import { authErrorHandler, authentication, handlers } from "@gasboost/auth-app";
+
+const app = new AppsScript()
+  .use(authErrorHandler())
+  .calls(handlers(auth))
+  .use(authentication(auth))
+  .call(
+    "someProtectedRpc",
+    (_input, context) => context.state.get("session").userId,
+  );
+```
+
+`handlers(auth)`、認証・認可 middleware、Consumer RPC 内で直接呼び出した
+Auth API の `AuthError` を、同じ `code` と `message` の `AppsScriptError`
+に変換します。その他の例外はそのまま再 throw し、RPC 境界で
+`INTERNAL_ERROR` と安全な共通メッセージに正規化されます。
+
+フロントエンドでは `@gasboost/client@^0.6.0` が復元したエラーを判定します。
+`@gasboost/auth/errors` はブラウザでも安全に import できます。
+
+```ts
+import { AppsScriptRpcError } from "@gasboost/client";
+import { AUTH_ERROR_CODES } from "@gasboost/auth/errors";
+
+try {
+  await client.signInEmail({ email, password });
+} catch (error) {
+  if (
+    error instanceof AppsScriptRpcError &&
+    error.code === AUTH_ERROR_CODES.INVALID_CREDENTIALS
+  ) {
+    // 認証情報の再入力など、アプリ側の表示処理
+  }
+}
+```
+
+`@gasboost/auth-client` はエラーコードを複製せず、RPC エラーも復元しません。
