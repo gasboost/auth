@@ -2,7 +2,10 @@ import { User, type AfterSignInContext } from "@gasboost/auth";
 import { NodeUtilities } from "@gasboost/fake-node";
 import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { FirebaseAuthHook } from "../src/FirebaseAuthHook";
+import {
+  FirebaseAuthHook,
+  type FirebaseAuthContext,
+} from "../src/FirebaseAuthHook";
 
 describe("FirebaseAuthHook", () => {
   const utilities = new NodeUtilities();
@@ -119,11 +122,9 @@ describe("FirebaseAuthHook", () => {
   });
 
   it("claims factoryにはUserを含めずSessionのみを渡す", () => {
-    const claims = vi.fn(
-      ({ session }: { session: typeof context.session }) => ({
-        userId: session.userId,
-      }),
-    );
+    const claims = vi.fn(({ session }: FirebaseAuthContext) => ({
+      userId: session.userId,
+    }));
     const firebase = new FirebaseAuthHook({
       serviceAccount,
       utilities,

@@ -1,8 +1,6 @@
-import {
-  resolveUser,
-  type UserDataProvider,
-  type AuthenticatedUser,
-} from "./UserData";
+import { UserDTO } from "../dto/UserDTO";
+import { SessionDTO } from "../dto/SessionDTO";
+import { resolveUser, type UserDataProvider } from "./UserData";
 import { Authentication } from "../authentication/Authentication";
 import { Session } from "../domain/Session";
 import type { AfterSignInContext, AfterSignInHook } from "../hooks/AuthHooks";
@@ -12,12 +10,12 @@ export type SignInResult<THookResult = undefined, TData = never> = [
   THookResult,
 ] extends [undefined]
   ? {
-      readonly user: AuthenticatedUser<TData>;
-      readonly session: Session;
+      readonly user: UserDTO<TData>;
+      readonly session: SessionDTO;
     }
   : {
-      readonly user: AuthenticatedUser<TData>;
-      readonly session: Session;
+      readonly user: UserDTO<TData>;
+      readonly session: SessionDTO;
       readonly hooks: THookResult;
     };
 
@@ -70,8 +68,8 @@ export class SignIn<TCredential, THookResult = undefined, TData = never> {
 
     if (!this.afterSignIn) {
       return {
-        user,
-        session,
+        user: new UserDTO<TData>(user),
+        session: new SessionDTO(session),
       } as SignInResult<THookResult, TData>;
     }
 
@@ -84,8 +82,8 @@ export class SignIn<TCredential, THookResult = undefined, TData = never> {
       const hooks = await this.afterSignIn(context);
 
       return {
-        user,
-        session,
+        user: new UserDTO<TData>(user),
+        session: new SessionDTO(session),
         hooks,
       } as SignInResult<THookResult, TData>;
     } catch (error) {

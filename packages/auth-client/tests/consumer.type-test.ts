@@ -35,8 +35,8 @@ function enabledConsumer() {
   async function noHooks() {
     const result = await auth.signIn({ email: "user", password: "password" });
     const name: string = result.user.name;
-    // @ts-expect-error user.data is absent without a server-side provider
-    void result.user.data;
+    // @ts-expect-error user.data is never without a server-side provider
+    void result.user.data.permissions;
     // @ts-expect-error this server has no afterSignIn hook result
     void result.hooks;
     return name;

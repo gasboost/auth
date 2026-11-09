@@ -194,9 +194,11 @@ describe("AppsScriptAuth", () => {
         );
 
         vi.mocked(repository.account.findByIdentity).mockResolvedValue(
-          signedUp.user.accounts[0],
+          repository.user.create.mock.calls[0][0].accounts[0],
         );
-        vi.mocked(repository.user.find).mockResolvedValue(signedUp.user);
+        vi.mocked(repository.user.find).mockResolvedValue(
+          repository.user.create.mock.calls[0][0],
+        );
 
         const signedIn = await auth.signIn.appsScript({});
         expect(
@@ -320,11 +322,17 @@ describe("AppsScriptAuth", () => {
     });
 
     expect(user.name).toBe("Staff");
-    expect(user.accounts).toHaveLength(1);
-    expect(user.accounts[0].userId).toBe(user.id);
-    expect(user.accounts[0].identity.providerName).toBe("appsScript");
-    expect(user.accounts[0].identity.accountId).toBe("user@example.com");
-    expect(repository.user.create).toHaveBeenCalledWith(user);
+    expect(repository.user.create.mock.calls[0][0].accounts).toHaveLength(1);
+    expect(repository.user.create.mock.calls[0][0].accounts[0].userId).toBe(
+      user.id,
+    );
+    expect(
+      repository.user.create.mock.calls[0][0].accounts[0].identity.providerName,
+    ).toBe("appsScript");
+    expect(
+      repository.user.create.mock.calls[0][0].accounts[0].identity.accountId,
+    ).toBe("user@example.com");
+    expect(user).toEqual({ id: user.id, name: user.name });
   });
 
   it("AppsScriptAuth経由でEmailPasswordユーザーを登録できる", async () => {
@@ -350,10 +358,14 @@ describe("AppsScriptAuth", () => {
     });
 
     expect(user.name).toBe("Taro");
-    expect(user.accounts).toHaveLength(1);
-    expect(user.accounts[0].identity.providerName).toBe("emailPassword");
-    expect(user.accounts[0].identity.accountId).toBe("taro@example.com");
-    expect(repository.user.create).toHaveBeenCalledWith(user);
+    expect(repository.user.create.mock.calls[0][0].accounts).toHaveLength(1);
+    expect(
+      repository.user.create.mock.calls[0][0].accounts[0].identity.providerName,
+    ).toBe("emailPassword");
+    expect(
+      repository.user.create.mock.calls[0][0].accounts[0].identity.accountId,
+    ).toBe("taro@example.com");
+    expect(user).toEqual({ id: user.id, name: user.name });
   });
   it.each(["email", "appsScript"] as const)(
     "awaits the shared hook once after %s signup is saved",

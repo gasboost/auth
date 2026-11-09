@@ -494,3 +494,12 @@ try {
 ```
 
 `@gasboost/auth-client` はエラーコードを複製せず、RPC エラーも復元しません。
+
+## 0.9.0: 公開レスポンスのDTO化（破壊的変更）
+
+`@gasboost/auth@^0.12.0` と `@gasboost/auth-client@^0.8.0` に対応します。
+`handlers(auth)` の SignIn / SignUp / getSession はサービスが返す DTO をそのまま公開します。
+User は `id`, `name`, 設定した `data`、Session は `id`, `userId`, `createdAt`, `expiresAt` のみです。
+`user.accounts` / `account.identity` / Domain のメソッドは公開レスポンスに含まれません。
+`authentication(auth)` が state に保存する Session も同じ公開フィールドを持ちます。
+`user.data` と `hooks` の公開内容は Consumer が管理します。ハンドラー側のフィルタ設定は不要です。

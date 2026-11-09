@@ -1,3 +1,4 @@
+import { AccountDTO } from "../dto/AccountDTO";
 import type { AppsScriptAuthenticationConfig } from "../authentication/AppsScriptAuthentication";
 import type { EmailPasswordAuthConfig } from "../authentication/EmailPasswordAuthentication";
 import { authPattern } from "../AuthPattern";
@@ -22,7 +23,7 @@ export class AppsScriptAuthAccount {
     },
   ) {}
 
-  async add(userId: string, input: AddAccountInput): Promise<Account> {
+  async add(userId: string, input: AddAccountInput): Promise<AccountDTO> {
     const { repository, utilities, emailPassword, appsScript } = this.config;
     if (!userId?.trim() || !input.email?.trim())
       throw new Error("User ID and email are required");
@@ -60,6 +61,8 @@ export class AppsScriptAuthAccount {
             ).hash(id),
           })
         : new AppsScriptIdentity({ googleAccountAddress: input.email });
-    return repository.account.create(new Account({ id, userId, identity }));
+    return new AccountDTO(
+      await repository.account.create(new Account({ id, userId, identity })),
+    );
   }
 }

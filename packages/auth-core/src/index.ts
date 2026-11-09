@@ -41,3 +41,7 @@ export type {
 export type { AddAccountInput } from "./api/AppsScriptAuthAccount";
 
 export type { AuthenticatedUser, UserDataProvider } from "./api/UserData";
+
+export { UserDTO } from "./dto/UserDTO";
+export { AccountDTO } from "./dto/AccountDTO";
+export { SessionDTO } from "./dto/SessionDTO";

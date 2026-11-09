@@ -24,12 +24,19 @@ function syncConsumer() {
       await auth.signInAppsScript(),
       await auth.signUpAppsScript({ name: "User" }),
     ];
-    for (const value of values)
+    for (const value of values) {
       expectTypeOf(value.user.data.permissions).toEqualTypeOf<string[]>();
+      // @ts-expect-error RPC User DTOs never expose domain accounts
+      void value.user.accounts;
+      // @ts-expect-error RPC Session DTOs never expose domain methods
+      void value.session.isExpired;
+    }
     const restored = await auth.restoreSession();
     expectTypeOf(restored?.user.data.permissions).toEqualTypeOf<
       string[] | undefined
     >();
+    // @ts-expect-error restored RPC users never expose domain accounts
+    void restored?.user.accounts;
     // @ts-expect-error permissions are inferred as strings
     const invalid: number = restored!.user.data.permissions[0]!;
     void invalid;
@@ -52,12 +59,19 @@ function asyncConsumer() {
       await auth.signInAppsScript(),
       await auth.signUpAppsScript({ name: "User" }),
     ];
-    for (const value of values)
+    for (const value of values) {
       expectTypeOf(value.user.data.permissions).toEqualTypeOf<string[]>();
+      // @ts-expect-error RPC User DTOs never expose domain accounts
+      void value.user.accounts;
+      // @ts-expect-error RPC Session DTOs never expose domain methods
+      void value.session.isExpired;
+    }
     const restored = await auth.restoreSession();
     expectTypeOf(restored?.user.data.permissions).toEqualTypeOf<
       string[] | undefined
     >();
+    // @ts-expect-error restored RPC users never expose domain accounts
+    void restored?.user.accounts;
     // @ts-expect-error permissions are inferred as strings
     const invalid: number = restored!.user.data.permissions[0]!;
     void invalid;

@@ -80,9 +80,7 @@ describe("Registration and account linking with the installed SheetORM version",
       expect(db.table("account").find()).toHaveLength(
         emailPassword && appsScript ? 2 : 1,
       );
-      expect(user.accounts.every((account) => account.userId === user.id)).toBe(
-        true,
-      );
+      expect(user).not.toHaveProperty("accounts");
       expect(stored?.accounts).toHaveLength(
         emailPassword && appsScript ? 2 : 1,
       );

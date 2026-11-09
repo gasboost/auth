@@ -87,9 +87,11 @@ describe("AppsScriptAuthSignUp", () => {
     });
 
     expect(result.user.name).toBe("User");
-    expect(result.user.accounts).toHaveLength(1);
+    expect(result.user).not.toHaveProperty("accounts");
+    const storedUser = repository.user.create.mock.calls[0][0];
+    expect(storedUser.accounts).toHaveLength(1);
 
-    const account = result.user.accounts[0];
+    const account = storedUser.accounts[0];
 
     expect(account.userId).toBe(result.user.id);
     expect(account.identity).toBeInstanceOf(EmailPasswordIdentity);
@@ -100,7 +102,9 @@ describe("AppsScriptAuthSignUp", () => {
       result.session.expiresAt.getTime() - result.session.createdAt.getTime(),
     ).toBe(1000);
 
-    expect(repository.user.create).toHaveBeenCalledWith(result.user);
+    expect(repository.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({ id: result.user.id, name: result.user.name }),
+    );
     expect(sessionStorage.save).toHaveBeenCalledWith(result.session);
   });
 
@@ -196,9 +200,11 @@ describe("AppsScriptAuthSignUp", () => {
     });
 
     expect(result.user.name).toBe("User");
-    expect(result.user.accounts).toHaveLength(1);
+    expect(result.user).not.toHaveProperty("accounts");
+    const storedUser = repository.user.create.mock.calls[0][0];
+    expect(storedUser.accounts).toHaveLength(1);
 
-    const account = result.user.accounts[0];
+    const account = storedUser.accounts[0];
 
     expect(account.userId).toBe(result.user.id);
     expect(account.identity).toBeInstanceOf(AppsScriptIdentity);
@@ -206,7 +212,9 @@ describe("AppsScriptAuthSignUp", () => {
 
     expect(result.session.userId).toBe(result.user.id);
 
-    expect(repository.user.create).toHaveBeenCalledWith(result.user);
+    expect(repository.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({ id: result.user.id, name: result.user.name }),
+    );
     expect(sessionStorage.save).toHaveBeenCalledWith(result.session);
   });
 
@@ -312,6 +320,8 @@ describe("AppsScriptAuthSignUp", () => {
     };
     const { user } = await signUp.appsScript(input);
     expect(user.id).not.toBe("admin");
-    expect(user.accounts[0].identity.accountId).toBe("visitor@example.com");
+    expect(
+      repository.user.create.mock.calls[0][0].accounts[0].identity.accountId,
+    ).toBe("visitor@example.com");
   });
 });

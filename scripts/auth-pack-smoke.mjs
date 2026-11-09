@@ -22,6 +22,9 @@ const packages = [
     name: "@gasboost/auth",
     directory: join(rootDirectory, "packages", "auth-core"),
     exports: [
+      "UserDTO",
+      "AccountDTO",
+      "SessionDTO",
       "AppsScriptAuth",
       "AppsScriptAuthorization",
       "createAuthTables",
@@ -63,7 +66,7 @@ const packages = [
     ],
     peers: {
       "@gasboost/app": "^5.5.0",
-      "@gasboost/auth": "^0.11.0",
+      "@gasboost/auth": "^0.12.0",
     },
   },
   {
@@ -72,7 +75,7 @@ const packages = [
     exports: ["SheetOrmAuthRepository", "SheetOrmAuthorizationRepository"],
     peers: {
       "@gasboost/auth":
-        "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0",
+        "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0",
       "@gasboost/sheetorm": "^3.1.0 || ^4.0.0",
     },
   },
@@ -82,7 +85,7 @@ const packages = [
     exports: ["FirebaseAuthHook", "firebaseAuthHandlers"],
     peers: {
       "@gasboost/app": "^5.2.0",
-      "@gasboost/auth-app": "^0.6.0 || ^0.7.0 || ^0.8.0",
+      "@gasboost/auth-app": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0",
     },
   },
 ];
@@ -475,6 +478,12 @@ async function hookResults() {
   const id: string | undefined = session?.session.userId;
   const permissions: string[] | undefined = session?.user.data.permissions;
   const signedInPermissions: string[] = signedIn.user.data.permissions;
+  // @ts-expect-error packed RPC DTOs exclude domain accounts
+  void signedIn.user.accounts;
+  // @ts-expect-error packed RPC DTOs exclude domain methods
+  void signedIn.session.isExpired;
+  // @ts-expect-error restored RPC DTOs exclude domain accounts
+  void session?.user.accounts;
   // @ts-expect-error packed user data retains its inferred permissions type
   const invalidPermissions: number[] = signedIn.user.data.permissions;
   void [permissions, signedInPermissions, invalidPermissions];

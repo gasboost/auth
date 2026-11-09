@@ -775,7 +775,7 @@ restored?.user.data.permissions;
 4種の SignIn / SignUp と `session.getWithUser(id)` は同じ拡張ユーザー型を返します。
 拡張処理は毎回実行し、User / Session の保存スキーマを変更しません。
 `user.data` 未指定なら User の型・ログイン応答は従来どおりです。
-`session.get(id)` は既存の `Session | null` のままで、拡張処理を実行しません。
+`session.get(id)` は `SessionDTO | null` を返し、拡張処理を実行しません。
 `getWithUser(id)` は Session の既存フィールドに `user` を加えた応答を返します。
 無効・期限切れのセッションや取得できない User は `null` になります。
 
@@ -818,3 +818,37 @@ throw new AuthError({ code, message: "Forbidden" });
 例外のままです。管理用の account API も内部エラーを公開用コードに変換しません。
 RPC での共通変換は [auth-app の authErrorHandler](../auth-app/README.md#共通の認証エラー処理)
 を利用できます。
+
+## 0.12.0: 公開APIのDTO化（破壊的変更）
+
+SignIn / SignUp は `{ user: UserDTO<TData>, session: SessionDTO, hooks? }` を返します。
+`session.get()` は `SessionDTO | null`、`getWithUser()` は公開セッションフィールドと
+`user: UserDTO<TData>`、または `null` を返します。
+`registration.email()` / `appsScript()` は `UserDTO`、`account.add()` は `AccountDTO` を返します。
+DTO クラスは `@gasboost/auth` から import できます。
+
+- `UserDTO`: `id`, `name` と、設定した場合のみ `data`。`accounts` や `account()` は公開しません。
+- `AccountDTO`: `id`, `userId`, `providerName`, `accountId`。`identity` やパスワードハッシュは公開しません。
+- `SessionDTO`: `id`, `userId`, `createdAt`, `expiresAt`。`isExpired()` は公開しません。
+
+`user.accounts` / `account.identity` を使うサーバー処理は、認可した上で Repository から
+Domain を取得してください。`afterSignIn` と `user.data` callback には従来どおり Domain が渡ります。
+永続化・認証・有効期限判定は内部の Domain で実行します。
+`user.data` と `hooks` の内容は Consumer が公開可能な値だけを返す契約です。
+Consumer 側のフィルタ処理は不要です。
+
+### bootstrap Consumer の移行
+
+`@gasboost/bootstrap@0.4.0` は登録結果の `user.accounts` と追加結果の
+`account.identity` に依存するため、そのままでは互換性がありません。
+bootstrap 側で次のように移行してから組み合わせてください（別リポジトリでの対応）。
+
+1. `registration.email/appsScript()` の返却型を `{ id: string }` として受け取ります。
+2. 登録後に同じ `authRepository.user.find(registered.id)` から Domain を取得し、
+   既存の Account 整合性検証に使います。取得できなければ処理を失敗させます。
+3. `account.add()` 後も、同じ Repository の `account.findByIdentity(provider, email)` で
+   保存済み Domain を取得して所有者・Identity を検証します。
+4. bootstrap 側の peerDependency を対応した auth バージョンへ更新します。
+
+DTO に `accounts` / `identity` を復活させる回避策は使わず、登録と Account 追加の
+途中で停止した場合の再試行・所有者検証も維持してください。

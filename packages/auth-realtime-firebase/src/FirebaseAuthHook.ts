@@ -1,4 +1,4 @@
-import type { AfterSignInContext } from "@gasboost/auth";
+import type { SessionDTO } from "@gasboost/auth";
 import {
   FirebaseCustomToken,
   type FirebaseCustomClaims,
@@ -7,7 +7,7 @@ import {
 } from "@gasboost/realtime-firebase";
 
 export type FirebaseAuthContext = {
-  readonly session: AfterSignInContext["session"];
+  readonly session: SessionDTO;
 };
 
 export type FirebaseAuthHookResult = {

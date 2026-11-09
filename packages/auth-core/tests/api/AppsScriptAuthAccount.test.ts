@@ -59,15 +59,18 @@ describe("account.add", () => {
       const { api, repository, user, utilities } = setup();
       const account = await api.add(user.id, input);
       expect(account.userId).toBe(user.id);
-      expect(account.identity.providerName).toBe(input.provider);
-      expect(account.identity.accountId).toBe(input.email);
-      expect(repository.account.create).toHaveBeenCalledWith(account);
+      expect(account.providerName).toBe(input.provider);
+      expect(account.accountId).toBe(input.email);
+      const stored = repository.account.create.mock.calls[0][0];
+      expect(stored).toBeInstanceOf(Account);
+      expect(stored.id).toBe(account.id);
+      expect(account).not.toHaveProperty("identity");
       expect(repository.user.create).not.toHaveBeenCalled();
       expect(user.accounts).toEqual([]);
-      if (account.identity instanceof EmailPasswordIdentity) {
-        expect(account.identity.password.value).not.toBe("secret");
+      if (stored.identity instanceof EmailPasswordIdentity) {
+        expect(stored.identity.password.value).not.toBe("secret");
         expect(
-          await account.identity.password.verify(
+          await stored.identity.password.verify(
             new Password("secret", utilities, "pepper", 1),
             account.id,
           ),
