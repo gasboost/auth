@@ -49,7 +49,8 @@ describe("SignUp", () => {
     expect(registration.register).toHaveBeenCalledWith(input);
 
     expect(result).not.toHaveProperty("hooks");
-    expect(result.user).toBe(user);
+    expect(result.user).toEqual({ id: user.id, name: user.name });
+    expect(result.user).not.toHaveProperty("accounts");
     expect(result.session.id).toBe("session-1");
     expect(result.session.userId).toBe("user-1");
     expect(result.session.createdAt).toEqual(

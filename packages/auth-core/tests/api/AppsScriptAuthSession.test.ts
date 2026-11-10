@@ -30,7 +30,7 @@ describe("AppsScriptAuthSession", () => {
       sessionStorage,
     });
 
-    await expect(api.get("session-1")).resolves.toBe(session);
+    await expect(api.get("session-1")).resolves.toEqual(session);
 
     expect(sessionStorage.get).toHaveBeenCalledWith("session-1");
   });

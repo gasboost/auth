@@ -1,8 +1,11 @@
-import { User, type AfterSignInContext } from "@gasboost/auth";
+import { User, SessionDTO, type AfterSignInContext } from "@gasboost/auth";
 import { NodeUtilities } from "@gasboost/fake-node";
 import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { FirebaseAuthHook } from "../src/FirebaseAuthHook";
+import {
+  FirebaseAuthHook,
+  type FirebaseAuthContext,
+} from "../src/FirebaseAuthHook";
 
 describe("FirebaseAuthHook", () => {
   const utilities = new NodeUtilities();
@@ -119,11 +122,9 @@ describe("FirebaseAuthHook", () => {
   });
 
   it("claims factoryにはUserを含めずSessionのみを渡す", () => {
-    const claims = vi.fn(
-      ({ session }: { session: typeof context.session }) => ({
-        userId: session.userId,
-      }),
-    );
+    const claims = vi.fn(({ session }: FirebaseAuthContext) => ({
+      userId: session.userId,
+    }));
     const firebase = new FirebaseAuthHook({
       serviceAccount,
       utilities,
@@ -133,7 +134,14 @@ describe("FirebaseAuthHook", () => {
     const payload = JSON.parse(
       Buffer.from(customToken.split(".")[1]!, "base64url").toString("utf8"),
     );
-    expect(claims).toHaveBeenCalledExactlyOnceWith({ session });
+    expect(claims).toHaveBeenCalledExactlyOnceWith({
+      session: new SessionDTO(session),
+    });
+    const publicSession = claims.mock.calls[0][0].session;
+    expect(publicSession).toBeInstanceOf(SessionDTO);
+    expect(publicSession).not.toBe(session);
+    expect(publicSession).not.toHaveProperty("isExpired");
+    expect(session.isExpired).toBeTypeOf("function");
     expect(payload.claims).toEqual({ userId: session.userId });
   });
 

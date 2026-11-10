@@ -377,3 +377,12 @@ function StaffAction() {
 `@gasboost/client@^0.6.0` と `@gasboost/auth/errors` を利用してください。
 コードの定義と RPC エラーの復元は auth-client では行いません。
 [auth-app の共通エラー処理](../auth-app/README.md#共通の認証エラー処理)を参照してください。
+
+## 0.8.0: 推論されるUser / Sessionの変更（破壊的変更）
+
+`@gasboost/auth@0.12.0` / `@gasboost/auth-app@0.9.0` の RPC レスポンスは DTO です。
+SignIn / SignUp / restoreSession の User は `id`, `name`, 設定した `data` を保持し、
+`user.accounts` や Domain のメソッドを公開しません。Session の公開フィールドは
+`id`, `userId`, `createdAt`, `expiresAt` です。
+`user.data` と `hooks` の型推論は維持され、Consumer 側のフィルタ処理は不要です。
+それらの追加データには Consumer が公開可能な値だけを設定してください。

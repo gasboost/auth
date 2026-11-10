@@ -1,6 +1,6 @@
 import type { AppsScriptAuthenticationConfig } from "../authentication/AppsScriptAuthentication";
 import type { EmailPasswordAuthConfig } from "../authentication/EmailPasswordAuthentication";
-import { User } from "../domain/User";
+import { UserDTO } from "../dto/UserDTO";
 import {
   AppsScriptRegistration,
   type AppsScriptRegistrationInput,
@@ -51,19 +51,19 @@ export class AppsScriptAuthRegistration {
     }
   }
 
-  async email(input: EmailPasswordRegistrationInput): Promise<User> {
+  async email(input: EmailPasswordRegistrationInput): Promise<UserDTO> {
     if (!this.emailPasswordRegistration) {
       throw new Error("Email and password authentication is disabled");
     }
 
-    return this.emailPasswordRegistration.register(input);
+    return new UserDTO(await this.emailPasswordRegistration.register(input));
   }
 
-  async appsScript(input: AppsScriptRegistrationInput): Promise<User> {
+  async appsScript(input: AppsScriptRegistrationInput): Promise<UserDTO> {
     if (!this.appsScriptRegistration) {
       throw new Error("Apps Script authentication is disabled");
     }
 
-    return this.appsScriptRegistration.register(input);
+    return new UserDTO(await this.appsScriptRegistration.register(input));
   }
 }

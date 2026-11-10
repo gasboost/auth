@@ -1,3 +1,5 @@
+import { UserDTO } from "../dto/UserDTO";
+import { SessionDTO } from "../dto/SessionDTO";
 import { resolveUser, type UserDataProvider } from "./UserData";
 import { Session } from "../domain/Session";
 import type { AfterSignInHook } from "../hooks/AuthHooks";
@@ -58,12 +60,19 @@ export class SignUp<T, THookResult = undefined, TData = never> {
     await this.sessionStorage.save(session);
 
     if (!this.afterSignIn) {
-      return { user, session } as SignUpResult<THookResult, TData>;
+      return {
+        user: new UserDTO<TData>(user),
+        session: new SessionDTO(session),
+      } as SignUpResult<THookResult, TData>;
     }
 
     try {
       const hooks = await this.afterSignIn({ user, session });
-      return { user, session, hooks } as SignUpResult<THookResult, TData>;
+      return {
+        user: new UserDTO<TData>(user),
+        session: new SessionDTO(session),
+        hooks,
+      } as SignUpResult<THookResult, TData>;
     } catch (error) {
       try {
         await this.sessionStorage.delete(session.id);

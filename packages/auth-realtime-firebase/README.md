@@ -284,3 +284,13 @@ FirebaseCustomToken.generate()
 ## License
 
 MIT
+
+## 0.4.0: Session DTO 対応
+
+`FirebaseAuthContext.session` は公開セッションフィールド
+`id`, `userId`, `createdAt`, `expiresAt` を持つ `SessionDTO` です。
+claims callback から Domain の `isExpired()` を使うコードは変更が必要です。
+`afterSignIn` の入口で SessionDTO に変換するため、auth-core Hook と認証済み RPC の
+どちらの経路でも claims callback に渡るセッションのフィールドは同じです。
+`afterSignIn` Hook と認証済み RPC の両方で利用でき、RPC の有効期限判定は
+`authentication(auth)` が行います。`@gasboost/auth-app@0.9.0` に対応します。

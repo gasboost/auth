@@ -2,6 +2,7 @@ import { authErrorHandler } from "@gasboost/auth-app";
 import { AppsScript, type InferAppsScript } from "@gasboost/app";
 import {
   AppsScriptAuth,
+  SessionDTO,
   type User,
   type AppsScriptAuthRepository,
 } from "@gasboost/auth";
@@ -108,6 +109,37 @@ function setup(expiresIn = 1200) {
 }
 
 describe("firebaseAuthHandlers", () => {
+  it("gives claims the same SessionDTO shape through auth hooks and authenticated RPC", async () => {
+    const { client, storage, afterSignIn, claims } = setup();
+    await client.signUpAppsScript({ name: "Taro" });
+    const signedIn = await client.signInAppsScript({});
+    storage.set(signedIn.session.id);
+    await client.issueFirebaseCustomToken();
+
+    // Auth-core still passes Domain Sessions; middleware passes a DTO.
+    for (const [{ session }] of afterSignIn.mock.calls.slice(0, 2)) {
+      expect(session).toHaveProperty("isExpired", expect.any(Function));
+    }
+    expect(afterSignIn.mock.calls[2][0].session).not.toHaveProperty(
+      "isExpired",
+    );
+
+    expect(claims).toHaveBeenCalledTimes(3);
+    for (const [{ session }] of claims.mock.calls) {
+      expect(session).toBeInstanceOf(SessionDTO);
+      expect(Object.keys(session).sort()).toEqual([
+        "createdAt",
+        "expiresAt",
+        "id",
+        "userId",
+      ]);
+      expect(session).not.toHaveProperty("isExpired");
+    }
+    expect(claims.mock.calls[1][0].session).toEqual(
+      claims.mock.calls[2][0].session,
+    );
+  });
+
   it("reuses the sign-in hook and claims with the existing authenticated session", async () => {
     const { client, storage, auth, afterSignIn, claims, repository } = setup();
     const signedUp = await client.signUpAppsScript({ name: "Taro" });

@@ -1,3 +1,5 @@
+import { UserDTO } from "../dto/UserDTO";
+import { SessionDTO } from "../dto/SessionDTO";
 import type { AppsScriptAuthRepository } from "../storage/AppsScriptAuthRepository";
 import { resolveUser, type UserDataProvider } from "./UserData";
 import { SessionId } from "../domain/Session";
@@ -21,23 +23,31 @@ export class AppsScriptAuthSession<TData = never> {
     this.userData = userData;
   }
 
-  public async get(sessionId: SessionId) {
+  public async get(sessionId: SessionId): Promise<SessionDTO | null> {
     const session = await this.sessionStorage.get(sessionId);
     if (session && session.isExpired(new Date())) {
       await this.sessionStorage.delete(session.id);
       return null;
     }
-    return session;
+    return session ? new SessionDTO(session) : null;
   }
 
   /** RPC response: retain the existing session fields and add the current user. */
-  public async getWithUser(sessionId: SessionId) {
+  public async getWithUser(
+    sessionId: SessionId,
+  ): Promise<(SessionDTO & { readonly user: UserDTO<TData> }) | null> {
     const session = await this.get(sessionId);
     if (!session) return null;
     if (!this.repository) throw new Error("User repository is required");
     const user = await this.repository.user.find(session.userId);
     if (!user) return null;
-    return { ...session, user: await resolveUser(user, this.userData) };
+    return {
+      id: session.id,
+      userId: session.userId,
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+      user: new UserDTO<TData>(await resolveUser(user, this.userData)),
+    };
   }
 
   public async cleanup() {

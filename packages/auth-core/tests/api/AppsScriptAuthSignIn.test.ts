@@ -123,7 +123,8 @@ describe("AppsScriptAuthSignIn", () => {
       password: "password",
     });
 
-    expect(result.user).toBe(user);
+    expect(result.user).toEqual({ id: user.id, name: user.name });
+    expect(result.user).not.toHaveProperty("accounts");
     expect(result.session.userId).toBe("user-1");
     expect(sessionStorage.save).toHaveBeenCalledWith(result.session);
   });
@@ -193,7 +194,8 @@ describe("AppsScriptAuthSignIn", () => {
 
     const result = await signIn.appsScript({});
 
-    expect(result.user).toBe(user);
+    expect(result.user).toEqual({ id: user.id, name: user.name });
+    expect(result.user).not.toHaveProperty("accounts");
     expect(result.session.userId).toBe("user-1");
     expect(sessionStorage.save).toHaveBeenCalledWith(result.session);
   });

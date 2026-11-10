@@ -6,6 +6,7 @@ import { AppsScriptAuthenticationConfig } from "../../src/authentication/AppsScr
 import { EmailPasswordAuthConfig } from "../../src/authentication/EmailPasswordAuthentication";
 import { authPattern } from "../../src/AuthPattern";
 import { User } from "../../src/domain/User";
+import { UserDTO } from "../../src/dto/UserDTO";
 import { AppsScriptIdentity } from "../../src/identity/AppsScriptIdentity";
 import { EmailPasswordIdentity } from "../../src/identity/EmailPasswordIdentity";
 import type { AppsScriptAuthRepository } from "../../src/storage/AppsScriptAuthRepository";
@@ -64,11 +65,13 @@ describe("AppsScriptAuthRegistration", () => {
 
       const user = await registration.email(input);
 
-      expect(user).toBeInstanceOf(User);
+      expect(user).toBeInstanceOf(UserDTO);
       expect(user.name).toBe("Taro");
-      expect(user.accounts).toHaveLength(1);
+      expect(user).not.toHaveProperty("accounts");
+      const storedUser = repository.user.create.mock.calls[0][0];
+      expect(storedUser.accounts).toHaveLength(1);
 
-      const account = user.accounts[0];
+      const account = storedUser.accounts[0];
 
       expect(account.userId).toBe(user.id);
       expect(account.identity).toBeInstanceOf(EmailPasswordIdentity);
@@ -79,7 +82,9 @@ describe("AppsScriptAuthRegistration", () => {
         input.email,
       );
 
-      expect(repository.user.create).toHaveBeenCalledWith(user);
+      expect(repository.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({ id: user.id, name: user.name }),
+      );
     });
 
     it("isSignupEnabled=falseでも登録できる", async () => {
@@ -91,7 +96,7 @@ describe("AppsScriptAuthRegistration", () => {
         }),
       });
 
-      await expect(registration.email(input)).resolves.toBeInstanceOf(User);
+      await expect(registration.email(input)).resolves.toBeInstanceOf(UserDTO);
     });
 
     it("認証方式がdisabledの場合は登録を拒否する", async () => {
@@ -176,11 +181,13 @@ describe("AppsScriptAuthRegistration", () => {
         email: "staff@example.com",
       });
 
-      expect(user).toBeInstanceOf(User);
+      expect(user).toBeInstanceOf(UserDTO);
       expect(user.name).toBe("Staff");
-      expect(user.accounts).toHaveLength(1);
+      expect(user).not.toHaveProperty("accounts");
+      const storedUser = repository.user.create.mock.calls[0][0];
+      expect(storedUser.accounts).toHaveLength(1);
 
-      const account = user.accounts[0];
+      const account = storedUser.accounts[0];
 
       expect(account.userId).toBe(user.id);
       expect(account.identity).toBeInstanceOf(AppsScriptIdentity);
@@ -191,7 +198,9 @@ describe("AppsScriptAuthRegistration", () => {
         "staff@example.com",
       );
 
-      expect(repository.user.create).toHaveBeenCalledWith(user);
+      expect(repository.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({ id: user.id, name: user.name }),
+      );
     });
 
     it("isSignupEnabled=falseでも登録できる", async () => {
@@ -204,7 +213,7 @@ describe("AppsScriptAuthRegistration", () => {
 
       await expect(
         registration.appsScript({ name: "Staff", email: "staff@example.com" }),
-      ).resolves.toBeInstanceOf(User);
+      ).resolves.toBeInstanceOf(UserDTO);
     });
 
     it("認証方式がdisabledの場合は登録を拒否する", async () => {
