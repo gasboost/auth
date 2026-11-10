@@ -6,7 +6,9 @@ export class SessionDTO {
   readonly createdAt: Date;
   readonly expiresAt: Date;
 
-  constructor(session: Session) {
+  constructor(
+    session: Pick<Session, "id" | "userId" | "createdAt" | "expiresAt">,
+  ) {
     this.id = session.id;
     this.userId = session.userId;
     this.createdAt = session.createdAt;

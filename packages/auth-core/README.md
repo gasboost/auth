@@ -841,6 +841,7 @@ Consumer 側のフィルタ処理は不要です。
 
 `@gasboost/bootstrap@0.4.0` は登録結果の `user.accounts` と追加結果の
 `account.identity` に依存するため、そのままでは互換性がありません。
+**bootstrap 側の対応が完了するまでは、新しい auth と組み合わせてリリース・導入しないでください。**
 bootstrap 側で次のように移行してから組み合わせてください（別リポジトリでの対応）。
 
 1. `registration.email/appsScript()` の返却型を `{ id: string }` として受け取ります。

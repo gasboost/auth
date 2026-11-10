@@ -1,4 +1,4 @@
-import type { SessionDTO } from "@gasboost/auth";
+import { SessionDTO } from "@gasboost/auth";
 import {
   FirebaseCustomToken,
   type FirebaseCustomClaims,
@@ -37,10 +37,11 @@ export class FirebaseAuthHook {
   public readonly afterSignIn = ({
     session,
   }: FirebaseAuthContext): FirebaseAuthHookResult => {
+    const publicSession = new SessionDTO(session);
     return {
       customToken: FirebaseCustomToken.generate({
-        uid: session.userId,
-        claims: this.claims?.({ session }),
+        uid: publicSession.userId,
+        claims: this.claims?.({ session: publicSession }),
         serviceAccount: this.serviceAccount,
         utilities: this.utilities,
       }),

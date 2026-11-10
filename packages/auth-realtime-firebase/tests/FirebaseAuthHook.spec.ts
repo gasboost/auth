@@ -1,4 +1,4 @@
-import { User, type AfterSignInContext } from "@gasboost/auth";
+import { User, SessionDTO, type AfterSignInContext } from "@gasboost/auth";
 import { NodeUtilities } from "@gasboost/fake-node";
 import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
@@ -134,7 +134,14 @@ describe("FirebaseAuthHook", () => {
     const payload = JSON.parse(
       Buffer.from(customToken.split(".")[1]!, "base64url").toString("utf8"),
     );
-    expect(claims).toHaveBeenCalledExactlyOnceWith({ session });
+    expect(claims).toHaveBeenCalledExactlyOnceWith({
+      session: new SessionDTO(session),
+    });
+    const publicSession = claims.mock.calls[0][0].session;
+    expect(publicSession).toBeInstanceOf(SessionDTO);
+    expect(publicSession).not.toBe(session);
+    expect(publicSession).not.toHaveProperty("isExpired");
+    expect(session.isExpired).toBeTypeOf("function");
     expect(payload.claims).toEqual({ userId: session.userId });
   });
 
