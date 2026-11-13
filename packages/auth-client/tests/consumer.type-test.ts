@@ -7,10 +7,11 @@ import { appsScriptAuth, authMetadataProvider } from "../src/appsscript";
 
 function enabledConsumer() {
   const storage: AuthStorage = memoryAuthStorage();
-  const { client } = appsScriptClient<EnabledApp>({
+  const { client, jobs } = appsScriptClient<EnabledApp>({
     metadataProviders: [authMetadataProvider(storage)],
   });
   const auth = appsScriptAuth({ client, storage });
+  void jobs;
 
   void auth.signIn({ email: "user", password: "password" });
   void auth.signUp({ name: "Taro", email: "user", password: "password" });

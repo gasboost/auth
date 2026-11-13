@@ -38,6 +38,9 @@ const packages = [
   {
     name: "@gasboost/auth-client",
     directory: join(rootDirectory, "packages", "auth-client"),
+    peers: {
+      "@gasboost/client": "^0.5.0 || ^0.6.0 || ^0.7.0",
+    },
     exports: [
       "authCore",
       "authClient",
@@ -203,6 +206,15 @@ try {
 
   // Overrides route unpublished packages to tarballs; verify the actual public
   // dependency contract before overrides can hide an incompatible auth version.
+  const packedAuthClient = readPackedPackageJson(
+    tarballs.get("@gasboost/auth-client"),
+  );
+  if (
+    packedAuthClient.peerDependenciesMeta?.["@gasboost/client"]?.optional !==
+    true
+  ) {
+    throw new Error("Auth Client must keep @gasboost/client an optional peer");
+  }
   const packedAuth = readPackedPackageJson(tarballs.get("@gasboost/auth"));
   const packedFirebase = readPackedPackageJson(
     tarballs.get("@gasboost/auth-realtime-firebase"),
@@ -221,7 +233,7 @@ try {
         private: true,
         dependencies: {
           "@gasboost/app": "^5.5.0",
-          "@gasboost/client": "^0.6.0",
+          "@gasboost/client": "0.7.0",
           "@gasboost/auth": `file:${tarballs.get("@gasboost/auth")}`,
           "@gasboost/auth-app": `file:${tarballs.get("@gasboost/auth-app")}`,
           "@gasboost/auth-client": `file:${tarballs.get("@gasboost/auth-client")}`,
@@ -436,9 +448,10 @@ void handlers(serverAuth).account;
 const input: InferAppsScript<typeof app>["updateProfile"]["input"] = { name: "Taro" };
 void app.dispatch("updateProfile", input, metadata);
 const storage: AuthStorage = memoryAuthStorage();
-const { client } = appsScriptClient<InferAppsScript<typeof app>>({
+const { client, jobs } = appsScriptClient<InferAppsScript<typeof app>>({
   metadataProviders: [authMetadataProvider(storage)],
 });
+void jobs;
 // Consumer SDK operations; the library only depends on ExternalAuth.
 declare const firebaseAuth: {
   authStateReady(): Promise<void>;
